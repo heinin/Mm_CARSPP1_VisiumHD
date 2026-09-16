@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="heinin" />
+
+<meta name="date" content="2026-09-16" />
+
+<title>Mouse Visium HD, spatial expression and cluster phenotyping</title>
+
+<script src="site_libs/header-attrs-2.27/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.13.2/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/main/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Mm_CARSPP1_VisiumHD</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Mouse Visium HD, spatial expression and
+cluster phenotyping</h1>
+<h4 class="author">heinin</h4>
+<h4 class="date">2026-09-16</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2026-09-16
+</p>
+<p>
+<strong>Checks:</strong> <span
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 5
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> 2
+</p>
+<p>
+<strong>Knit directory:</strong> <code>Mm_CARSPP1_VisiumHD/</code> <span
+class="glyphicon glyphicon-question-sign" aria-hidden="true"
+title="This is the local directory in which the code in this file was executed.">
+</span>
+</p>
+<p>
+This reproducible <a href="https://rmarkdown.rstudio.com">R Markdown</a>
+analysis was created with <a
+  href="https://github.com/workflowr/workflowr">workflowr</a> (version
+1.7.1). The <em>Checks</em> tab describes the reproducibility checks
+that were applied when the results were created. The <em>Past
+versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguncommittedchanges"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The R Markdown is untracked by Git. To know which version of the R
+Markdown file created these results, you’ll want to first commit it to
+the Git repo. If you’re still working on the analysis, you can ignore
+this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the
+global environment can affect the analysis in your R Markdown file in
+unknown ways. For reproduciblity it’s best to always run the code in an
+empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20260915code">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Seed:</strong>
+<code>set.seed(20260915)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20260915code"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20260915)</code> was run prior to running
+the code in the R Markdown file. Setting a seed ensures that any results
+that rely on randomness, e.g. subsampling or permutations, are
+reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Session information:</strong>
+recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package
+versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be
+confident that you successfully produced the results during this
+run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongabsolute">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>File paths:</strong> absolute </a>
+</p>
+</div>
+<div id="strongFilepathsstrongabsolute" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Using absolute paths to the files within your workflowr project makes it
+difficult for you and others to run your code on a different machine.
+Change the absolute path(s) below to the suggested relative path(s) to
+make your code more reproducible.
+</p>
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th style="text-align:left;">
+absolute
+</th>
+<th style="text-align:left;">
+relative
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+/home/hnatri/Mm_CARSPP1_VisiumHD/figures
+</td>
+<td style="text-align:left;">
+figures
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+/home/hnatri/Mm_CARSPP1_VisiumHD/code/CART_plot_functions.R
+</td>
+<td style="text-align:left;">
+code/CART_plot_functions.R
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongaf08b4e">
+<span class="glyphicon glyphicon-ok text-success"
+aria-hidden="true"></span> <strong>Repository version:</strong> af08b4e
+</a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongaf08b4e"
+class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development
+and connecting the code version to the results is critical for
+reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version af08b4e.
+See the <em>Past versions</em> tab to see a history of the changes made
+to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for
+the analysis have been committed to Git prior to generating the results
+(you can use <code>wflow_publish</code> or
+<code>wflow_git_commit</code>). workflowr only checks the R Markdown
+file, but you know if there are other scripts or data files that it
+depends on. Below is the status of the Git repository when the results
+were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    analysis/figure/
+
+Untracked files:
+    Untracked:  CB_mBrianTMA-ROI.pdf
+    Untracked:  analysis/annotation.Rmd
+    Untracked:  code/CART_plot_functions.R
+    Untracked:  figures/
+    Untracked:  plot_CAR.R
+    Untracked:  plotting_VisiumHD_data.R
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not
+included in this status report because it is ok for generated content to
+have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with
+<code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="load-packages" class="section level2">
+<h2>Load packages</h2>
+<pre class="r"><code>library(Seurat)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(patchwork)
+library(tidyr)
+library(ggrepel)
+library(tidyverse)
+library(googlesheets4)
+library(gprofiler2)
+library(scCustomize)
+library(RColorBrewer)</code></pre>
+</div>
+<div id="environment-variables-and-helper-functions"
+class="section level2">
+<h2>Environment variables and helper functions</h2>
+<pre class="r"><code>set.seed(1234)
+options(future.globals.maxSize = 30000 * 1024^2)
+options(scipen = 99999)
+options(ggrepel.max.overlaps = Inf)
+
+figdir &lt;- &quot;/home/hnatri/Mm_CARSPP1_VisiumHD/figures&quot;
+
+# Project helper functions and themes (create_barplot(), plot themes, colors)
+source(&quot;/home/hnatri/Mm_CARSPP1_VisiumHD/code/CART_plot_functions.R&quot;)
+
+# Seurat cluster identity used throughout the marker / recluster sections. The
+# projected clustering at res 1.2 is the starting label: it is reclustered (see
+# the &quot;Reclustering&quot; section) into a `new_cluster` label, and from that point
+# on `seurat_cluster_var` is switched to &quot;new_cluster&quot; so annotation, markers
+# and the TACCO / predicted-ID comparisons all use the new clusters.
+seurat_cluster_var &lt;- &quot;projected_snn_res.1.2&quot;
+
+# Assay used for reclustering. The sketch assay holds the sketched cells the
+# projected clustering was learned on; fall back to the default assay if absent.
+recluster_assay &lt;- &quot;sketch&quot;</code></pre>
+</div>
+<div id="helper-functions" class="section level2">
+<h2>Helper functions</h2>
+<pre class="r"><code># Keep only features present in the object&#39;s active (or named) assay, so DotPlot
+# / FeaturePlot never error on a gene absent from the panel. Marker vectors
+# below deliberately include aliases (e.g. &quot;Cd11b&quot;, &quot;NKp46&quot;) that are not row
+# names; those are dropped here.
+present_features &lt;- function(sobj, features, assay = NULL) {
+  feats &lt;- unique(features)
+  if (is.null(assay)) assay &lt;- DefaultAssay(sobj)
+  avail &lt;- rownames(sobj[[assay]])
+  keep &lt;- feats[feats %in% avail]
+  missing &lt;- setdiff(feats, keep)
+  if (length(missing))
+    message(&quot;Dropping genes not in assay &#39;&quot;, assay, &quot;&#39;: &quot;,
+            paste(missing, collapse = &quot;, &quot;))
+  keep
+}
+
+# Compact DotPlot of `features` across the levels of `group_var`, in the shared
+# theme used throughout (classic theme, rotated axis, no axis titles). `flip`
+# puts genes on the y-axis (rows) for tall marker panels.
+cluster_dotplot &lt;- function(sobj, features, group_var, flip = TRUE,
+                            title = NULL, cols = c(&quot;gray89&quot;, &quot;tomato3&quot;)) {
+  feats &lt;- present_features(sobj, features)
+  p &lt;- DotPlot(sobj, features = feats, group.by = group_var, cols = cols) +
+    theme_classic() +
+    RotatedAxis() +
+    xlab(&quot;&quot;) + ylab(&quot;&quot;)
+  if (flip) p &lt;- p + coord_flip()
+  if (!is.null(title)) p &lt;- p + ggtitle(title)
+  p
+}
+
+# Full re-process of one Seurat cluster: subset, then re-run
+# FindVariableFeatures / ScaleData / PCA / UMAP / neighbors / clustering from
+# scratch on the sketch assay, producing a fresh &quot;umap.sketch&quot; reduction and a
+# `subcluster` label (parentCluster_subID). Heavier than reclustering on the
+# existing embedding, but gives clean, cluster-specific subclusters.
+recluster_subset &lt;- function(sobj, cl, cluster_col = seurat_cluster_var,
+                             assay = recluster_assay, npcs = 30, dims = 1:30,
+                             res = 0.5) {
+  cells &lt;- colnames(sobj)[!is.na(sobj@meta.data[[cluster_col]]) &amp;
+                            sobj@meta.data[[cluster_col]] == cl]
+  sub &lt;- subset(sobj, cells = cells)
+
+  DefaultAssay(sub) &lt;- if (assay %in% Assays(sub)) assay else DefaultAssay(sub)
+
+  sub &lt;- FindVariableFeatures(sub, verbose = FALSE)
+  sub &lt;- ScaleData(sub, verbose = FALSE)
+  sub &lt;- RunPCA(sub, npcs = npcs, reduction.name = &quot;pca.sub&quot;, verbose = FALSE)
+  sub &lt;- FindNeighbors(sub, reduction = &quot;pca.sub&quot;, dims = dims, verbose = FALSE)
+  sub &lt;- FindClusters(sub, resolution = res, verbose = FALSE)
+  sub &lt;- RunUMAP(sub, reduction = &quot;pca.sub&quot;, dims = dims,
+                 reduction.name = &quot;umap.sketch&quot;,
+                 reduction.key = &quot;umapsketch_&quot;, verbose = FALSE)
+
+  sub$subcluster &lt;- paste0(cl, &quot;_&quot;, as.character(sub$seurat_clusters))
+  sub$subcluster &lt;- factor(sub$subcluster,
+                           levels = paste0(cl, &quot;_&quot;,
+                                           sort(unique(as.integer(as.character(sub$seurat_clusters))))))
+  sub
+}</code></pre>
+</div>
+<div id="marker-gene-sets" class="section level2">
+<h2>Marker gene sets</h2>
+<pre class="r"><code># --- Mouse GBM / glioma markers -------------------------------------------
+# Human GBM driver genes mapped to mouse orthologs (Mgmt, Idh1, Idh2, Egfr,
+# Trp53, Tert), plus commonly used mouse glioma / lineage-state markers.
+gbm_genes_hs &lt;- c(&quot;MGMT&quot;, &quot;IDH1&quot;, &quot;IDH2&quot;, &quot;EGFR&quot;, &quot;PTEN&quot;, &quot;TP53&quot;, &quot;TERT&quot;)
+gbm_genes &lt;- tryCatch(
+  gorth(gbm_genes_hs, source_organism = &quot;hsapiens&quot;,
+        target_organism = &quot;mmusculus&quot;)$ortholog_name,
+  error = function(e) c(&quot;Mgmt&quot;, &quot;Idh1&quot;, &quot;Idh2&quot;, &quot;Egfr&quot;, &quot;Trp53&quot;, &quot;Tert&quot;))
+
+gbm_markers &lt;- unique(c(gbm_genes,
+                        &quot;Pten&quot;, &quot;Trp53&quot;, &quot;Egfr&quot;, &quot;Pdgfra&quot;,
+                        &quot;Olig1&quot;, &quot;Olig2&quot;, &quot;Sox2&quot;, &quot;Gfap&quot;, &quot;Nes&quot;, &quot;Vim&quot;,
+                        &quot;Mki67&quot;))
+
+# --- Mouse immune markers -------------------------------------------------
+# Mouse Immune Cell Marker Summary (Mus musculus)
+#  - Total Leukocytes: Ptprc (CD45)
+#  - T Cells (Pan): Cd3e, Cd3g, Cd247 (CD3)
+#  - Helper T Cells: Cd4
+#  - Cytotoxic T Cells: Cd8a, Cd8b1
+#  - Regulatory T Cells (Tregs): Foxp3, Cd25 (Il2ra), Ctla4
+#  - B Cells: Cd19, Ms4a1 (CD20), Cd79a
+#  - NK Cells: Ncr1 (NKp46), Klrb1c (NK1.1), Cd226
+#  - Macrophages (Pan): Adgre1 (F4/80), Cd68, Cd11b (Itgam)
+#  - M1 Macrophages: Nos2 (iNOS), Cd80, Cd86
+#  - M2 Macrophages: Cd163, Mrc1 (CD206), Arg1
+#  - cDCs: Itgax (CD11c), H2-Ab1 (MHCII)
+#  - pDCs: Siglech, Bst2 (CD317)
+#  - Neutrophils: Ly6g, Ly6c, S100a8
+#  - Monocytes: Ly6c, Cd11b (Itgam)
+#  - HSPCs: Cd34, Kit (c-Kit)
+#  Activation / memory: Sell, Ccr7, Cd44, Il7r; exhaustion Pdcd1, Cd274, Havcr2
+mouse_immune &lt;- c(&quot;Ptprc&quot;, &quot;Cd3e&quot;, &quot;Cd3g&quot;, &quot;Cd247&quot;, &quot;Cd4&quot;, &quot;Cd8a&quot;, &quot;Cd8b1&quot;,
+                  &quot;Foxp3&quot;, &quot;Cd25&quot;, &quot;Il2ra&quot;, &quot;Ctla4&quot;, &quot;Cd19&quot;, &quot;Ms4a1&quot;, &quot;Cd79a&quot;,
+                  &quot;Ncr1&quot;, &quot;NKp46&quot;, &quot;Klrb1c&quot;, &quot;Cd226&quot;,
+                  &quot;Adgre1&quot;, &quot;Cd68&quot;, &quot;Cd11b&quot;, &quot;Itgam&quot;,
+                  &quot;Nos2&quot;, &quot;Cd80&quot;, &quot;Cd86&quot;,
+                  &quot;Cd163&quot;, &quot;Mrc1&quot;, &quot;Arg1&quot;, &quot;Itgax&quot;, &quot;Cd11c&quot;,
+                  &quot;Siglech&quot;, &quot;Bst2&quot;, &quot;Ly6g&quot;, &quot;Ly6c&quot;, &quot;S100a8&quot;,
+                  &quot;Cd34&quot;, &quot;Kit&quot;,
+                  &quot;Sell&quot;, &quot;Ccr7&quot;, &quot;Cd44&quot;, &quot;Il7r&quot;,
+                  &quot;Pdcd1&quot;, &quot;Cd274&quot;, &quot;Havcr2&quot;)
+
+lymph_markers &lt;- c(&quot;Ptprc&quot;, &quot;Cd3e&quot;, &quot;Cd3g&quot;, &quot;Cd247&quot;, &quot;Cd4&quot;, &quot;Cd8a&quot;, &quot;Cd8b1&quot;,
+                   &quot;Foxp3&quot;, &quot;Cd25&quot;, &quot;Il2ra&quot;, &quot;Ctla4&quot;, &quot;Cd19&quot;, &quot;Ms4a1&quot;, &quot;Cd79a&quot;,
+                   &quot;Ncr1&quot;, &quot;NKp46&quot;, &quot;Klrb1c&quot;, &quot;Cd226&quot;)
+
+# Microglia vs. bone-marrow-derived TAM markers.
+mg_markers  &lt;- c(&quot;P2ry12&quot;, &quot;Tmem119&quot;, &quot;Cx3cr1&quot;, &quot;Hexb&quot;, &quot;Siglech&quot;,
+                 &quot;Sall1&quot;, &quot;Selplg&quot;, &quot;Csf1r&quot;, &quot;Aif1&quot;, &quot;Fcrls&quot;, &quot;C1qa&quot;, &quot;C1qb&quot;)
+tam_markers &lt;- c(&quot;Spp1&quot;, &quot;C1qa&quot;, &quot;C1qb&quot;, &quot;C1qc&quot;, &quot;Trem2&quot;, &quot;Mrc1&quot;, &quot;Cd163&quot;,
+                 &quot;Apoe&quot;, &quot;Gpnmb&quot;, &quot;Cd68&quot;, &quot;Adgre1&quot;, &quot;Itgam&quot;, &quot;Tnfrsf12a&quot;, &quot;Tnfsf12&quot;)
+
+# SPP1 / Tweak-Fn14 axis and interferon genes used across the treatment panels.
+spp1_axis   &lt;- c(&quot;Spp1&quot;, &quot;C1qa&quot;, &quot;Tnfrsf12a&quot;, &quot;Tnfsf12&quot;)
+ifn_genes   &lt;- c(&quot;Spp1&quot;, &quot;Jak1&quot;, &quot;Jak2&quot;)   # grep(&quot;Ifn&quot;, ...) appended at runtime
+
+# --- Mouse CAF markers ----------------------------------------------------
+# Mouse orthologs of the CAF program panels, grouped by program. Genes absent
+# from the Visium HD panel are dropped by present_features().
+caf_groups &lt;- list(
+  &quot;Pan-CAF / identity&quot;      = c(&quot;Pdgfra&quot;, &quot;Pdgfrb&quot;, &quot;Dcn&quot;, &quot;Lum&quot;, &quot;Vcan&quot;,
+                                &quot;Sparc&quot;, &quot;Thy1&quot;, &quot;Fap&quot;, &quot;Pdpn&quot;, &quot;Col1a1&quot;,
+                                &quot;Col1a2&quot;),
+  &quot;myCAF / contractile&quot;     = c(&quot;Acta2&quot;, &quot;Tagln&quot;, &quot;Tgfb1&quot;, &quot;Tgfbi&quot;, &quot;Postn&quot;,
+                                &quot;Myl9&quot;, &quot;Myh11&quot;, &quot;Tpm1&quot;, &quot;Tpm2&quot;),
+  &quot;Collagens / ECM&quot;         = c(&quot;Col3a1&quot;, &quot;Col5a1&quot;, &quot;Col5a2&quot;, &quot;Col6a1&quot;,
+                                &quot;Col6a2&quot;, &quot;Col6a3&quot;, &quot;Col4a1&quot;, &quot;Fn1&quot;, &quot;Bgn&quot;,
+                                &quot;Mgp&quot;, &quot;Aspn&quot;, &quot;Comp&quot;, &quot;Sfrp2&quot;, &quot;Sfrp4&quot;,
+                                &quot;Mmp2&quot;, &quot;Timp1&quot;),
+  &quot;iCAF / inflammatory&quot;     = c(&quot;Il6&quot;, &quot;Il1b&quot;, &quot;Cxcl1&quot;, &quot;Cxcl12&quot;, &quot;Cxcl14&quot;,
+                                &quot;Ccl2&quot;, &quot;Pdgfra&quot;),
+  &quot;apCAF / antigen pres.&quot;   = c(&quot;Cd74&quot;, &quot;H2-Ab1&quot;, &quot;H2-Aa&quot;, &quot;H2-Eb1&quot;))
+
+caf_markers &lt;- unique(unlist(caf_groups, use.names = FALSE))
+
+# --- Lineage marker panel for subcluster phenotyping ----------------------
+# Used to read out what each reclustered subcluster is (major CNS / TME
+# lineages), grouped by lineage.
+lineage_groups &lt;- list(
+  &quot;Glioma / tumor&quot;    = c(&quot;Olig1&quot;, &quot;Olig2&quot;, &quot;Sox2&quot;, &quot;Egfr&quot;, &quot;Pdgfra&quot;,
+                          &quot;Pten&quot;, &quot;Trp53&quot;, &quot;Mki67&quot;, &quot;Vim&quot;),
+  &quot;Astrocyte&quot;         = c(&quot;Gfap&quot;, &quot;Aqp4&quot;, &quot;Slc1a3&quot;, &quot;Aldh1l1&quot;),
+  &quot;Oligodendrocyte&quot;   = c(&quot;Mbp&quot;, &quot;Plp1&quot;, &quot;Mog&quot;, &quot;Sox10&quot;, &quot;Mag&quot;),
+  &quot;Neuron&quot;            = c(&quot;Rbfox3&quot;, &quot;Snap25&quot;, &quot;Syt1&quot;, &quot;Meg3&quot;),
+  &quot;Microglia&quot;         = c(&quot;P2ry12&quot;, &quot;Tmem119&quot;, &quot;Cx3cr1&quot;, &quot;Hexb&quot;, &quot;Sall1&quot;),
+  &quot;TAM / macrophage&quot;  = c(&quot;C1qa&quot;, &quot;C1qb&quot;, &quot;Aif1&quot;, &quot;Csf1r&quot;, &quot;Cd68&quot;, &quot;Adgre1&quot;,
+                          &quot;Mrc1&quot;, &quot;Spp1&quot;),
+  &quot;T / NK cell&quot;       = c(&quot;Cd3e&quot;, &quot;Cd8a&quot;, &quot;Cd4&quot;, &quot;Nkg7&quot;, &quot;Klrb1c&quot;),
+  &quot;B cell&quot;            = c(&quot;Cd19&quot;, &quot;Ms4a1&quot;, &quot;Cd79a&quot;),
+  &quot;Fibroblast / CAF&quot;  = c(&quot;Col1a1&quot;, &quot;Col1a2&quot;, &quot;Dcn&quot;, &quot;Pdgfra&quot;, &quot;Acta2&quot;),
+  &quot;Endothelial&quot;       = c(&quot;Pecam1&quot;, &quot;Cldn5&quot;, &quot;Flt1&quot;),
+  &quot;Pericyte / mural&quot;  = c(&quot;Rgs5&quot;, &quot;Pdgfrb&quot;, &quot;Notch3&quot;, &quot;Cd248&quot;))
+
+lineage_markers &lt;- unique(unlist(lineage_groups, use.names = FALSE))</code></pre>
+</div>
+<div id="import-data" class="section level2">
+<h2>Import data</h2>
+<pre class="r"><code># The final object with all TACCO labels.
+seurat_data &lt;- readRDS(&quot;/tgen_labs/banovich/BCTCSF/Mm_VisiumHD/tumor_obj_w_all_tacco_labels_09_09_2026.rds&quot;)
+
+# Fixing TMA3 treatment group
+seurat_data$Treatment &lt;- ifelse(seurat_data$TMA == 3 &amp; seurat_data$Sample %in% c(166, 159),
+                                &quot;Anti-Spp1&quot;, seurat_data$Treatment)
+seurat_data$Treatment &lt;- gsub(&quot; &quot;, &quot;&quot;, seurat_data$Treatment)
+seurat_data$Treatment &lt;- gsub(&quot;Anti-Spp1/CAR&quot;, &quot;Anti-Spp1+CAR&quot;, seurat_data$Treatment)
+table(seurat_data$Treatment, seurat_data$TMA)</code></pre>
+<pre><code>               
+                    1     2     3
+  Anti-Spp1         0     0 51050
+  Anti-Spp1+CAR 16434 30248     0
+  CAR           44184 22054     0
+  Tumor             0     0 81044</code></pre>
+<pre class="r"><code># Treatment_Day, ordered for all downstream grouping.
+seurat_data$Treatment_Day &lt;- paste0(seurat_data$Treatment, &quot;_&quot;, seurat_data$Day)
+seurat_data$Treatment_Day &lt;- factor(seurat_data$Treatment_Day,
+                                    levels = c(&quot;Tumor_16&quot;, &quot;Tumor_20&quot;,
+                                               &quot;Anti-Spp1_16&quot;, &quot;Anti-Spp1_20&quot;,
+                                               &quot;CAR_16&quot;, &quot;CAR_20&quot;,
+                                               &quot;Anti-Spp1+CAR_16&quot;, &quot;Anti-Spp1+CAR_20&quot;))</code></pre>
+<p>Colors for treatment and day, reused throughout.</p>
+<pre class="r"><code>treatment_cols &lt;- c(&quot;Anti-Spp1+CAR&quot; = &quot;aquamarine3&quot;,
+                    &quot;CAR&quot;           = &quot;cyan4&quot;,
+                    &quot;Anti-Spp1&quot;     = &quot;mediumpurple&quot;,
+                    &quot;Tumor&quot;         = &quot;deeppink3&quot;)
+
+day_cols &lt;- c(&quot;16&quot; = &quot;gray40&quot;,
+              &quot;20&quot; = &quot;azure3&quot;)</code></pre>
+<p>Panel-present gene counts, used to size the marker dot plots (≈0.22
+in / gene).</p>
+<pre class="r"><code>n_immune_genes  &lt;- length(present_features(seurat_data, unique(c(lymph_markers, mouse_immune))))
+n_gbm_genes     &lt;- length(present_features(seurat_data, gbm_markers))
+n_caf_genes     &lt;- length(present_features(seurat_data, caf_markers))
+n_lineage_genes &lt;- length(present_features(seurat_data, lineage_markers))</code></pre>
+</div>
+<div id="spatial-overview" class="section level2">
+<h2>Spatial overview</h2>
+<p>Treatment and day across the spatial embedding.</p>
+<pre class="r"><code>p1 &lt;- DimPlot(seurat_data, reduction = &quot;sp&quot;, group.by = &quot;Treatment&quot;,
+              cols = treatment_cols) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+p2 &lt;- DimPlot(seurat_data, reduction = &quot;sp&quot;, group.by = &quot;Day&quot;,
+              cols = day_cols) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+p1 / p2</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-8-1.png" width="1920" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pdf(file.path(figdir, &quot;VisiumHD_dimplot_treatment.pdf&quot;), width = 20, height = 8)
+p1
+dev.off()</code></pre>
+<pre><code>png 
+  2 </code></pre>
+<pre class="r"><code>pdf(file.path(figdir, &quot;VisiumHD_dimplot_day.pdf&quot;), width = 20, height = 8)
+p2
+dev.off()</code></pre>
+<pre><code>png 
+  2 </code></pre>
+<p>Counts and features per spot.</p>
+<pre class="r"><code>FeaturePlot(seurat_data, reduction = &quot;sp&quot;,
+            features = c(&quot;nCount_Spatial&quot;, &quot;nFeature_Spatial&quot;),
+            ncol = 1, raster = TRUE) &amp;
+  theme_classic() &amp; coord_fixed()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-9-1.png" width="1920" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pdf(file.path(figdir, &quot;VisiumHD_counts_features.pdf&quot;), width = 20, height = 12)
+FeaturePlot(seurat_data, reduction = &quot;sp&quot;,
+            features = c(&quot;nCount_Spatial&quot;, &quot;nFeature_Spatial&quot;),
+            ncol = 1, raster = TRUE) &amp;
+  theme_classic() &amp; coord_fixed()
+dev.off()</code></pre>
+<pre><code>png 
+  2 </code></pre>
+</div>
+<div id="gbm-glioma-gene-expression" class="section level2">
+<h2>GBM / glioma gene expression</h2>
+<p>Mouse orthologs of the human GBM driver panel across the tissue.</p>
+<pre class="r"><code>FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data, c(gbm_genes, &quot;C1qa&quot;)),
+                     reduction = &quot;sp&quot;, num_columns = 1, raster = FALSE, order = TRUE)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-10-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggsave(file.path(figdir, &quot;VisiumHD_GBM_genes.png&quot;), width = 12, height = 24)</code></pre>
+</div>
+<div id="tumor-microenvironment-marker-plots" class="section level2">
+<h2>Tumor microenvironment marker plots</h2>
+<p>Immune, SPP1 / Tweak-Fn14 axis and structural markers across the
+tissue.</p>
+<pre class="r"><code>FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data,
+                                c(&quot;Tigit&quot;, &quot;Cd8a&quot;, &quot;Cd3e&quot;, &quot;Spp1&quot;, &quot;Tnfrsf12a&quot;,
+                                  &quot;Tnfsf12&quot;, &quot;C1qa&quot;, &quot;Cd44&quot;, &quot;Col1a1&quot;, &quot;Pten&quot;)),
+                     reduction = &quot;sp&quot;, num_columns = 1,
+                     slot = &quot;data&quot;, pt.size = 1, na_cutoff = 1, order = TRUE) &amp;
+  coord_fixed() &amp; NoAxes()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-11-1.png" width="960" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ggsave(file.path(figdir, &quot;VisiumHD_TME_genes.png&quot;), width = 10, height = 26)</code></pre>
+<p>SPP1 axis and interferon signaling.</p>
+<pre class="r"><code>FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data, spp1_axis),
+                     reduction = &quot;sp&quot;, num_columns = 1,
+                     slot = &quot;data&quot;, pt.size = 1, na_cutoff = 1, order = TRUE) &amp;
+  coord_fixed() &amp; NoAxes()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-12-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>ifn_features &lt;- present_features(seurat_data,
+                                 c(ifn_genes, grep(&quot;Ifn&quot;, rownames(seurat_data), value = TRUE)))
+
+FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data,
+                                c(&quot;Spp1&quot;, &quot;Jak1&quot;, &quot;Jak2&quot;, &quot;Ifna&quot;, &quot;Ifnb1&quot;)),
+                     reduction = &quot;sp&quot;, num_columns = 1,
+                     slot = &quot;data&quot;, pt.size = 1, na_cutoff = 1, order = TRUE) &amp;
+  coord_fixed() &amp; NoAxes()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-12-2.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="marker-expression-by-treatment-and-day" class="section level2">
+<h2>Marker expression by treatment and day</h2>
+<pre class="r"><code>VlnPlot(seurat_data, features = present_features(seurat_data, spp1_axis),
+        split.by = &quot;Treatment&quot;, group.by = &quot;Day&quot;, pt.size = 0, ncol = 1,
+        cols = treatment_cols) &amp;
+  theme_classic()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-13-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DotPlot(seurat_data,
+        features = present_features(seurat_data, c(ifn_genes, grep(&quot;Ifn&quot;, rownames(seurat_data), value = TRUE))),
+        group.by = &quot;Treatment_Day&quot;) &amp;
+  theme_classic() &amp; coord_flip() &amp; RotatedAxis() &amp; xlab(&quot;&quot;) &amp; ylab(&quot;&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-13-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>Summary dot plot across treatment × day.</p>
+<pre class="r"><code>dotp &lt;- DotPlot(seurat_data,
+        features = present_features(seurat_data,
+                   c(&quot;Tigit&quot;, &quot;Cd8a&quot;, &quot;Cd3e&quot;, &quot;Spp1&quot;, &quot;C1qa&quot;, &quot;Cd44&quot;, &quot;Col1a1&quot;, &quot;Pten&quot;)),
+        group.by = &quot;Treatment_Day&quot;,
+        cols = c(&quot;gray89&quot;, &quot;tomato3&quot;)) +
+  coord_flip() + theme_classic() + RotatedAxis() + xlab(&quot;&quot;) + ylab(&quot;&quot;)
+dotp</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-14-1.png" width="480" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>pdf(file.path(figdir, &quot;VisiumHD_dotplot.pdf&quot;), width = 5, height = 3)
+dotp
+dev.off()</code></pre>
+<pre><code>png 
+  2 </code></pre>
+<p>TAM-focused SPP1 axis by treatment × day.</p>
+<pre class="r"><code>tams &lt;- subset(seurat_data,
+               subset = predicted.id_class_immune %in% c(&quot;TAM 1&quot;, &quot;TAM 2&quot;, &quot;prol. TAM&quot;))
+
+DotPlot(tams, features = present_features(tams, spp1_axis),
+        group.by = &quot;Treatment_Day&quot;) &amp;
+  theme_classic()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-15-1.png" width="576" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>VlnPlot(tams, features = present_features(tams, spp1_axis),
+        group.by = &quot;Treatment_Day&quot;, split.by = &quot;predicted.id_class_immune&quot;,
+        pt.size = 0, ncol = 1, cols = treatment_cols) &amp;
+  theme_classic() &amp; RotatedAxis() &amp; xlab(&quot;&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-15-2.png" width="576" style="display: block; margin: auto;" /></p>
+</div>
+<div
+id="reclustering-each-seurat-cluster-and-building-the-working-cluster-label"
+class="section level2">
+<h2>Reclustering each Seurat cluster and building the working cluster
+label</h2>
+<p>Each Seurat cluster (<code>projected_snn_res.1.2</code>) is subset
+and fully re-processed from scratch (FindVariableFeatures → ScaleData →
+PCA → UMAP → neighbors → clustering) on the sketch assay, producing a
+fresh <code>umap.sketch</code> embedding and a <code>subcluster</code>
+label. Cluster 2 is reclustered at a higher resolution than the other
+clusters. Selected subclusters are then split out into their own
+clusters while every other spot keeps its
+<code>projected_snn_res.1.2</code> label, giving a
+<code>new_cluster</code> label. From this point on
+<code>new_cluster</code> is the primary Seurat cluster identity, used
+for annotation, marker discovery and the TACCO / predicted-ID
+comparisons below.</p>
+<pre class="r"><code># Base clustering to recluster is always the projected res 1.2 label, regardless
+# of what seurat_cluster_var is later switched to.
+recluster_base_var &lt;- &quot;projected_snn_res.1.2&quot;
+
+clusters_to_recluster &lt;- setdiff(sort(unique(as.character(seurat_data@meta.data[[recluster_base_var]]))),
+                                 &quot;NA&quot;)
+
+# Per-cluster reclustering resolution: default 0.5, higher for cluster 2.
+recluster_res &lt;- setNames(rep(0.5, length(clusters_to_recluster)), clusters_to_recluster)
+if (&quot;2&quot; %in% names(recluster_res)) recluster_res[&quot;2&quot;] &lt;- 1.0
+
+# Re-process each cluster once; results reused by the per-cluster chunks below.
+recluster_list &lt;- lapply(clusters_to_recluster, function(cl)
+  tryCatch(recluster_subset(seurat_data, cl, cluster_col = recluster_base_var,
+                            res = recluster_res[[cl]]),
+           error = function(e) { message(&quot;Recluster failed for &quot;, cl, &quot;: &quot;, conditionMessage(e)); NULL }))
+names(recluster_list) &lt;- clusters_to_recluster
+recluster_list &lt;- recluster_list[!vapply(recluster_list, is.null, logical(1))]</code></pre>
+<p>Build the merged <code>new_cluster</code> label: split out the
+requested subclusters, keep everything else at its
+<code>projected_snn_res.1.2</code> label.</p>
+<pre class="r"><code># Collect the per-cell subcluster labels (parentCluster_subID) from every
+# reclustered subset back onto the full object.
+subcluster_map &lt;- setNames(rep(NA_character_, ncol(seurat_data)), colnames(seurat_data))
+for (cl in names(recluster_list)) {
+  sub &lt;- recluster_list[[cl]]
+  subcluster_map[colnames(sub)] &lt;- as.character(sub$subcluster)
+}
+seurat_data$subcluster &lt;- subcluster_map
+
+# Subclusters to break out into their own clusters. Any spot NOT in this list
+# keeps its projected_snn_res.1.2 label (&quot;combine other&quot;).
+separate_subclusters &lt;- c(&quot;0_2&quot;,
+                          &quot;1_2&quot;, &quot;1_3&quot;,
+                          &quot;10_2&quot;, &quot;10_3&quot;,
+                          &quot;12_2&quot;,
+                          &quot;14_2&quot;,
+                          &quot;4_2&quot;,
+                          &quot;5_2&quot;,
+                          &quot;6_3&quot;,
+                          &quot;9_3&quot;)
+
+seurat_data$new_cluster &lt;- as.character(seurat_data@meta.data[[recluster_base_var]])
+split_idx &lt;- !is.na(seurat_data$subcluster) &amp; seurat_data$subcluster %in% separate_subclusters
+seurat_data$new_cluster[split_idx] &lt;- seurat_data$subcluster[split_idx]
+
+# NA handling + ordered factor.
+seurat_data$new_cluster &lt;- ifelse(is.na(seurat_data$new_cluster), &quot;NA&quot;, seurat_data$new_cluster)
+seurat_data$new_cluster &lt;- factor(seurat_data$new_cluster,
+                                  levels = sort(unique(seurat_data$new_cluster)))
+
+# Sanity check: how many spots ended up in each (sub)cluster, and confirm every
+# requested subcluster was actually found and split out.
+print(table(seurat_data$new_cluster))</code></pre>
+<pre><code>
+    0   0_2     1    10  10_2    11    12  12_2    13    14    15    16    17 
+25817    54 33638 17793   103 13272  9730   305  9399  5259  3916  4457  1157 
+    2     3     4   4_2     5   5_2     6     7     8     9   9_3 
+22524 19178 14327    46 14084   909 11400 11434 12281 13856    75 </code></pre>
+<pre class="r"><code>missing_split &lt;- setdiff(separate_subclusters, unique(seurat_data$subcluster))
+if (length(missing_split))
+  message(&quot;Requested subclusters not found at the current resolution: &quot;,
+          paste(missing_split, collapse = &quot;, &quot;))
+
+# Use the new clusters as the primary Seurat cluster identity from here on
+# (annotation, markers, TACCO / predicted-ID comparisons).
+seurat_cluster_var &lt;- &quot;new_cluster&quot;
+
+# Palette for the new clusters, reused throughout.
+seurat_cluster_col &lt;- colorRampPalette(brewer.pal(12, &quot;Paired&quot;))(length(levels(seurat_data$new_cluster)))
+names(seurat_cluster_col) &lt;- levels(seurat_data$new_cluster)</code></pre>
+<p>Subcluster UMAPs.</p>
+<pre class="r"><code>umap_plots &lt;- lapply(names(recluster_list), function(cl) {
+  DimPlot(recluster_list[[cl]], reduction = &quot;umap.sketch&quot;,
+          group.by = &quot;subcluster&quot;, label = TRUE, repel = TRUE) +
+    theme_classic() + NoLegend() +
+    ggtitle(paste0(&quot;Cluster &quot;, cl, &quot; subclusters&quot;))
+})
+wrap_plots(umap_plots, ncol = 3)</code></pre>
+<p><img src="figure/annotation.Rmd/recluster-umaps-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>Lineage markers in the subclusters of each Seurat cluster.</p>
+<pre class="r"><code>for (cl in names(recluster_list)) {
+  print(cluster_dotplot(recluster_list[[cl]], lineage_markers,
+                        group_var = &quot;subcluster&quot;,
+                        title = paste0(&quot;Lineage markers in cluster &quot;, cl, &quot; subclusters&quot;)))
+}</code></pre>
+<p><img src="figure/annotation.Rmd/recluster-lineage-dot-1.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-2.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-3.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-4.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-5.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-6.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-7.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-8.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-9.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-10.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-11.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-12.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-13.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-14.png" width="480" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-lineage-dot-15.png" width="480" style="display: block; margin: auto;" /></p>
+<p>Immune, GBM and CAF markers within each cluster’s subclusters.</p>
+<pre class="r"><code>for (cl in names(recluster_list)) {
+  sub &lt;- recluster_list[[cl]]
+  print(cluster_dotplot(sub, unique(c(lymph_markers, mouse_immune)),
+                        group_var = &quot;subcluster&quot;,
+                        title = paste0(&quot;Immune markers, cluster &quot;, cl, &quot; subclusters&quot;)))
+  print(cluster_dotplot(sub, gbm_markers, group_var = &quot;subcluster&quot;,
+                        title = paste0(&quot;GBM markers, cluster &quot;, cl, &quot; subclusters&quot;)))
+  print(cluster_dotplot(sub, caf_markers, group_var = &quot;subcluster&quot;,
+                        title = paste0(&quot;CAF markers, cluster &quot;, cl, &quot; subclusters&quot;)))
+}</code></pre>
+<p><img src="figure/annotation.Rmd/recluster-marker-panels-1.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-2.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-3.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-4.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-5.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-6.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-7.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-8.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-9.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-10.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-11.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-12.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-13.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-14.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-15.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-16.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-17.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-18.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-19.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-20.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-21.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-22.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-23.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-24.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-25.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-26.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-27.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-28.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-29.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-30.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-31.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-32.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-33.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-34.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-35.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-36.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-37.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-38.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-39.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-40.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-41.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-42.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-43.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-44.png" width="768" style="display: block; margin: auto;" /><img src="figure/annotation.Rmd/recluster-marker-panels-45.png" width="768" style="display: block; margin: auto;" /></p>
+<p>New cluster label on the tissue.</p>
+<pre class="r"><code>DimPlot(seurat_data, reduction = &quot;sp&quot;, group.by = seurat_cluster_var,
+        cols = seurat_cluster_col) +
+  theme_classic() + coord_fixed() + NoAxes()</code></pre>
+<p><img src="figure/annotation.Rmd/new-cluster-sp-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div id="cell-type-annotations" class="section level2">
+<h2>Cell type annotations</h2>
+<pre class="r"><code>seurat_data$TACCO_myeloid_label &lt;- ifelse(is.na(seurat_data$TACCO_myeloid_label),
+                                          &quot;NA&quot;, seurat_data$TACCO_myeloid_label)
+seurat_data$predicted.id_tam    &lt;- ifelse(is.na(seurat_data$predicted.id_tam),
+                                          &quot;NA&quot;, seurat_data$predicted.id_tam)
+
+# The primary Seurat cluster label is now `new_cluster` (built in the
+# reclustering section from projected_snn_res.1.2 with selected subclusters
+# split out); its factor levels and palette (seurat_cluster_col) are set there.
+
+TACCO_myeloid_label_col &lt;- colorRampPalette(brewer.pal(10, &quot;Paired&quot;))(length(unique(seurat_data$TACCO_myeloid_label)))
+names(TACCO_myeloid_label_col) &lt;- sort(unique(seurat_data$TACCO_myeloid_label))
+
+predicted.id_tam_col &lt;- colorRampPalette(brewer.pal(10, &quot;Paired&quot;))(length(unique(seurat_data$predicted.id_tam)))
+names(predicted.id_tam_col) &lt;- sort(unique(seurat_data$predicted.id_tam))</code></pre>
+<p>TACCO myeloid label on the tissue.</p>
+<pre class="r"><code>DimPlot(seurat_data, group.by = &quot;TACCO_myeloid_label&quot;, reduction = &quot;sp&quot;) &amp;
+  coord_fixed()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-17-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>Cell type composition by treatment × day.</p>
+<pre class="r"><code>create_barplot(seurat_data,
+               group_var = &quot;Treatment_Day&quot;,
+               plot_var = &quot;TACCO_myeloid_label&quot;,
+               plot_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+               group_levels = levels(seurat_data$Treatment_Day),
+               plot_colors = TACCO_myeloid_label_col,
+               var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;),
+               legend_title = &quot;Cell type&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-18-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>Per-sample proportions with treatment × day distribution.</p>
+<pre class="r"><code>prop_df &lt;- seurat_data@meta.data %&gt;%
+  dplyr::count(Sample, Treatment_Day, TACCO_myeloid_label, name = &quot;n&quot;) %&gt;%
+  dplyr::group_by(Sample) %&gt;%
+  dplyr::mutate(prop = n / sum(n)) %&gt;%
+  dplyr::ungroup() %&gt;%
+  tidyr::complete(tidyr::nesting(Sample, Treatment_Day), TACCO_myeloid_label,
+                  fill = list(n = 0, prop = 0))
+
+ggplot(prop_df, aes(x = Treatment_Day, y = prop, fill = Treatment_Day)) +
+  geom_violin(scale = &quot;width&quot;, trim = FALSE, alpha = 0.7) +
+  geom_jitter(width = 0.12, size = 0.9, alpha = 0.8) +
+  facet_wrap(~ TACCO_myeloid_label, scales = &quot;free_y&quot;) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = NULL, y = &quot;Proportion of cells&quot;) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = &quot;none&quot;,
+        axis.text.x = element_text(angle = 45, hjust = 1))</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-19-1.png" width="1248" style="display: block; margin: auto;" /></p>
+<p>Seurat cluster composition by treatment × day.</p>
+<pre class="r"><code>create_barplot(seurat_data,
+               group_var = &quot;Treatment_Day&quot;,
+               plot_var = seurat_cluster_var,
+               plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+               group_levels = levels(seurat_data$Treatment_Day),
+               plot_colors = seurat_cluster_col,
+               var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;),
+               legend_title = &quot;Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-20-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="annotation-concordance" class="section level2">
+<h2>Annotation concordance</h2>
+<p>Cross-tabulations and paired bar plots between the new Seurat
+clusters (<code>new_cluster</code>), the TACCO myeloid labels, and the
+Seurat label-transfer TAM annotation.</p>
+<pre class="r"><code>table(seurat_data@meta.data[[seurat_cluster_var]], seurat_data$TACCO_myeloid_label)</code></pre>
+<pre><code>      
+       Astro-Epen B cells   DC1   DC2   DC3   DC4 HY GABA Hypoxic Mo-TAM
+  0          3736       9   172   548    61     5     185           2352
+  0_2           3       0     0     0     0     0       0              2
+  1         10466      68   981   270   246   306     302            535
+  10         1251      43   490   326   109    48     112           1544
+  10_2          3       0     1     1     0     1       4             31
+  11         2659      24   286    80    52   168     294            192
+  12          787      32   311   261   213    19      61            570
+  12_2         23       0     8     8     7     0       1             22
+  13          303       6   135   214    36     2      78           1254
+  14          653       5    69    18    23    75     276             23
+  15          425       1     7     1     4    20     962              1
+  16         2844       0     0     1     1     0       3              8
+  17          297       0     5     0     8     3     397              0
+  2          1233       0    18    11     4    14      27             28
+  3          6963       2   132   106    37    18      54            587
+  4          2201       0    19   158     9     0      35            494
+  4_2           1       0     0     1     0     0       0              0
+  5           503       5    90   245    42     0      54           1376
+  5_2          13       0     2     9     0     0       7             46
+  6           835      15   189    84   128    21      85            240
+  7          1522       0     5    68     0     0      30            101
+  8          4010       9   101    18    28   118     989             49
+  9         10251       3    51    10    24    29     222             50
+  9_3          66       0     0     0     0     0       2              0
+      
+       IFN Mo-TAM Lipid Mo-TAM Mast cells MB GABA MB Glut Mg-TAM MH-LH Glut
+  0           188           91         13     268     356    360        177
+  0_2           0            0          0       0       0      0          1
+  1           145          389         49     330     243   3504        362
+  10         1132          148          7     186     157   1043        102
+  10_2          0           10          1       1       0     12          0
+  11           24           20         34     193     204   1805        351
+  12          296           18          3     134      95    631        184
+  12_2         17            3          0       1       2     89          2
+  13         1855           19          9      74      61    568         93
+  14            2            2         17      93     172    558        281
+  15            1            0         11     301      55     48        503
+  16            0            0          0       1       2     60          3
+  17            0            1          2      21      21      4        157
+  2             6            9          1      13      16    437         22
+  3           225           31          0      53      82   2984         69
+  4             7            4          2      49      95     13         27
+  4_2           0            0          0       0       2      1          0
+  5          2152           17          4      46      59    383        174
+  5_2         105            0          0       3       2     22         18
+  6           266           12          5      96     200    357        189
+  7             2            3          3      41      58      0         47
+  8             6            7         52     465     200    420        768
+  9             6            2         22      87      78    292        188
+  9_3           0            0          0       0       0      0          3
+      
+       Monocytes    NA NK cells OPC-Oligo plasma B cells prol. TAM
+  0           34     0       19      2220             42      2159
+  0_2          0     0        0         0              3         3
+  1           27     0      107      7167             77       316
+  10         134     0       49       677            206       605
+  10_2        12     0        0         3              0         1
+  11           8     0       20      4072             28       138
+  12          26     0      227       793             40       922
+  12_2         0     0        6        35              2        12
+  13         160     0        8       264             10       794
+  14           0     0        7      1747             13        45
+  15           0     0        0       264              0         3
+  16           0     0        0      1458              0         1
+  17           1     1        1        68              1         4
+  2            0     0        3     20255              4        23
+  3            3     0        6      5470             10       215
+  4            0     0        4      1223              3       819
+  4_2          0     0        0         2              2         0
+  5           70     0        7       423             13      1650
+  5_2          4     0        0         9              0       106
+  6           24     0       25       782              9       227
+  7            0     0        1      1137              0       737
+  8            4     0        4      2782              3        20
+  9            1     0        2      1490              5         8
+  9_3          0     0        0         0              0         0
+      
+       Regulatory T cells Sepp1+(a) Mo-TAM Sepp1+(b) Mo-TAM T cells TH Glut
+  0                    66              598              456     184    3702
+  0_2                   0                1                1       0      36
+  1                    84              417             4957     196    1441
+  10                   41             1424             5404     102    1194
+  10_2                  0                2                3       1      11
+  11                   23               93             1140      51    1116
+  12                  144              424              510     492    1262
+  12_2                  3               10               35       3      10
+  13                   14              485              192      30     846
+  14                    9               26              129      22     948
+  15                    0                0                6       4    1297
+  16                    0                1                7       0      62
+  17                    4                0                1       6     140
+  2                     0               17              185       1     162
+  3                     8              162              899      16     714
+  4                    26               50               11      69    2398
+  4_2                   0                0                0       0      28
+  5                     8              480               39      62    1905
+  5_2                   1               20                1       1     174
+  6                    16              248              532     136    1004
+  7                    16                4                0      31    2128
+  8                    24               18              133      25    1941
+  9                    10               16              131      11     746
+  9_3                   0                0                0       0       4
+      
+       Transitory Mo-TAM Unknown Vascular
+  0                  193       1     7622
+  0_2                  0       0        4
+  1                   43      93      517
+  10                 589       8      662
+  10_2                 3       0        2
+  11                   4      29      164
+  12                 104       0     1171
+  12_2                 4       0        2
+  13                 597       0     1292
+  14                   0       1       45
+  15                   0       0        2
+  16                   0       0        5
+  17                   0       0       14
+  2                    1      17       17
+  3                   31      21      280
+  4                   10       0     6601
+  4_2                  0       0        9
+  5                  914       0     3363
+  5_2                 51       0      315
+  6                   72       4     5599
+  7                    0       0     5500
+  8                    0       5       82
+  9                    0       6      115
+  9_3                  0       0        0</code></pre>
+<pre class="r"><code>table(seurat_data@meta.data[[seurat_cluster_var]], seurat_data$predicted.id_tam)</code></pre>
+<pre><code>      
+       Astro-Epen B cells   DC1   DC2   DC3   DC4 HY GABA Hypoxic Mo-TAM
+  0           697      11     6    76    36    18       0              1
+  0_2           1       1     0     0     0     0       0              0
+  1           355       7     3     1    10     9       0              0
+  10          113      16     9     7    13     9       0              0
+  10_2          0       0     0     0     0     1       0              0
+  11          496       3     3     4     2    27       0              0
+  12           77      27    17    82   223    24       0              0
+  12_2          5       9     2     8    17     1       0              0
+  13           94       6    12    50    10    12       0              0
+  14          247       0     0     4     2    21       1              0
+  15           64       0     0     0     0     0       0              0
+  16         2885       0     0     0     0    10       0              0
+  17           25       0     0     0     0     0       0              0
+  2           305       1     1     4     7    19       0              0
+  3          2838      13    19    66    69   114       0              3
+  4           100       0    10    20    49     0       0              8
+  4_2           0       0     0     0     0     0       0              0
+  5            41       1    18   158    97     9       0              7
+  5_2           0       0     0     3     7     0       0              1
+  6            61      23     8    29   131    31       0              0
+  7           116       2     6     4     1     0       0              3
+  8           622       0     0     0     0     4       0              0
+  9          4422       0     0     0     0     7       0              0
+  9_3          35       0     0     0     0     0       0              0
+      
+       IFN Mo-TAM Lipid Mo-TAM    LQ Mast cells Mg-TAM MH-LH Glut Monocytes
+  0            12          133    26         61     31          0      4315
+  0_2           0            1     1          0      0          0        12
+  1             0           14    53          0      5          0        71
+  10           19          166    21          6      7          0      2111
+  10_2          0            3     0          0      0          0        30
+  11            0            6    56          0     15          2        45
+  12           19           25    10         24     20          0      1156
+  12_2          4            0     1          1      6          0        42
+  13          107           54     4         18     47          0      4144
+  14            0            0     7          0     31         71        10
+  15            0            0     0          0      2        158         0
+  16            5            0   109          0    181          0         6
+  17            0            0     0          0      0          1         0
+  2             3            6    42          0    115          0        45
+  3            93          108   338         28    558          0       855
+  4            32            5     0         51     32          0      1390
+  4_2           1            0     0          0      0          0         2
+  5           866           15     0        105     40          0      5889
+  5_2          93            1     0          6      1          0       298
+  6            47           16     5         13     14          0       895
+  7            32            0     3         22     15          0      1396
+  8             0            0     6          0      6         13         4
+  9             0            1    54          0      2          0         3
+  9_3           0            0     0          0      0          0         0
+      
+       NK cells OPC-Oligo plasma B cells prol. TAM Regulatory T cells
+  0          17      5084             55       345                  0
+  0_2         0         4             12         0                  0
+  1           4     28544             10         6                  0
+  10          5      8670            119         5                  0
+  10_2        0        64              0         0                  0
+  11          2     11102              6         6                  1
+  12         71      2277             30        76                 35
+  12_2        6        16              3         5                  0
+  13          9      1947             12        18                  2
+  14          1      4463              1         2                  0
+  15          0      3661              0         0                  0
+  16          3       788              0         3                  0
+  17          0      1131              0         0                  0
+  2          12     20492              0         9                  0
+  3          43      4708              7       250                  4
+  4          12       132             22       455                 29
+  4_2         0         0              4         1                  0
+  5          10       150             24       350                  6
+  5_2         2         2              0        51                  4
+  6          20      2890             12        34                  8
+  7          10       404             14       896                  5
+  8           0     11408              0         0                  0
+  9           0      9152              1         0                  0
+  9_3         0        40              0         0                  0
+      
+       Sepp1+(a) Mo-TAM Sepp1+(b) Mo-TAM T cells Transitory Mo-TAM Unknown
+  0                 530             1070    2806               776     589
+  0_2                 0                2       6                 1       1
+  1                 344               23     505                49    3573
+  10               1139              237     784               903    3225
+  10_2                1                0       0                 0       4
+  11                 50               34     233                20    1125
+  12                 75              174    3442               184     500
+  12_2                4                5      98                 7      65
+  13                143              474     499               546     252
+  14                  8               28      56                 3     281
+  15                  0                4       6                 0      20
+  16                 41              114       8                 4     239
+  17                  0                0       0                 0       0
+  2                  26              118     104                17    1168
+  3                 288             1211    1185               271    5200
+  4                 364              620    1573               321      11
+  4_2                 1                1      10                 1       0
+  5                 144             1060     870               962      15
+  5_2                19               52      37                35       0
+  6                 152              170     795               193     497
+  7                 497               63     598               168       1
+  8                   8               10      42                 1     136
+  9                   6                3      31                 2     157
+  9_3                 0                0       0                 0       0
+      
+       Vascular
+  0        9122
+  0_2        12
+  1          52
+  10        209
+  10_2        0
+  11         34
+  12       1162
+  12_2        0
+  13        939
+  14         22
+  15          1
+  16         61
+  17          0
+  2          30
+  3         909
+  4        9091
+  4_2        25
+  5        3247
+  5_2       297
+  6        5356
+  7        7178
+  8          21
+  9          15
+  9_3         0</code></pre>
+<pre class="r"><code>table(seurat_data$predicted.id_tam, seurat_data$TACCO_myeloid_label)</code></pre>
+<pre><code>                    
+                     Astro-Epen B cells   DC1   DC2   DC3   DC4 HY GABA
+  Astro-Epen               9883       0    35    32    12     9      94
+  B cells                    10      14     4     2     2     0       1
+  DC1                         7       0    41     0     2     0       1
+  DC2                        26       0    26    51    21     1       1
+  DC3                        56       0    15     8   139     0       3
+  DC4                        51       1    15     5     1    12       1
+  HY GABA                     0       0     0     0     0     0       0
+  Hypoxic Mo-TAM              5       0     0     0     0     0       0
+  IFN Mo-TAM                 72       0     2    16     1     0       3
+  Lipid Mo-TAM               76       0     0     1     0     0       2
+  LQ                        390       0     2     3     1     0       2
+  Mast cells                 39       0     0    11     0     0       0
+  Mg-TAM                    323       0     7     8     2     0       4
+  MH-LH Glut                 12       0     0     0     0     1      68
+  Monocytes                1594      11   237   481    40     6      76
+  NK cells                   11       0     4     2     3     0       1
+  OPC-Oligo               26794     165  2039   896   602   767    3591
+  plasma B cells             11       1     1     1     0     0       0
+  prol. TAM                 477       0    12    18     0     0       9
+  Regulatory T cells          6       1     1     1     0     0       0
+  Sepp1+(a) Mo-TAM          521       0    37    41     3     7      11
+  Sepp1+(b) Mo-TAM         1054       0    24    43     5     0      16
+  T cells                  1752      20   295   370   121    25      58
+  Transitory Mo-TAM         294       1    40    82     4     2      16
+  Unknown                  3452       3   179    61    17    15      56
+  Vascular                 4132       5    56   305    56     2     166
+                    
+                     Hypoxic Mo-TAM IFN Mo-TAM Lipid Mo-TAM Mast cells MB GABA
+  Astro-Epen                     80         17            2          1      44
+  B cells                         6          5            0          0       2
+  DC1                             4          6            0          0       0
+  DC2                            25         62            0          1       5
+  DC3                            34          8            0          0       9
+  DC4                            10          8            1          0       0
+  HY GABA                         0          0            0          0       0
+  Hypoxic Mo-TAM                  5          0            0          0       0
+  IFN Mo-TAM                    135        431            1          0       6
+  Lipid Mo-TAM                  172         10            6          0       1
+  LQ                             18          5            2          0       2
+  Mast cells                     19         15            0          4       4
+  Mg-TAM                         17         11            0          0       2
+  MH-LH Glut                      0          0            0          1       9
+  Monocytes                    3642       2746          144          6     113
+  NK cells                       12         15            0          0       0
+  OPC-Oligo                    1888       1157          448        203    1857
+  plasma B cells                  2          2            0          1       2
+  prol. TAM                      45         11            2          0      12
+  Regulatory T cells              3          0            0          0       2
+  Sepp1+(a) Mo-TAM              395        117           12          2      17
+  Sepp1+(b) Mo-TAM              610        438            9          1      25
+  T cells                       806        282           21          8     121
+  Transitory Mo-TAM             317        704            5          0      26
+  Unknown                       539        115          123          1      37
+  Vascular                      721        270           10          6     160
+                    
+                     MB Glut Mg-TAM MH-LH Glut Monocytes    NA NK cells
+  Astro-Epen              79    175         77         0     0        1
+  B cells                  1     23          1         0     0        0
+  DC1                      1      7          1         0     0        0
+  DC2                      3     27         12         1     0        2
+  DC3                     16     30         43         0     0        0
+  DC4                      7     46          0         0     0        2
+  HY GABA                  0      0          0         0     0        0
+  Hypoxic Mo-TAM           0      0          0         0     0        0
+  IFN Mo-TAM               3     89         20         4     0        0
+  Lipid Mo-TAM             4     42          1         0     0        0
+  LQ                       1     57          0         0     0        0
+  Mast cells               1     14          6         0     0        0
+  Mg-TAM                   3    284          3         0     0        0
+  MH-LH Glut               9      2         51         0     0        0
+  Monocytes              129    720        130       228     0       25
+  NK cells                 1     22          2         1     0       28
+  OPC-Oligo             1312   5954       2923       204     1      278
+  plasma B cells           0      5          2         0     0        0
+  prol. TAM               16     53         12         1     0        0
+  Regulatory T cells       2      0          3         0     0        0
+  Sepp1+(a) Mo-TAM        16    230          6        12     0        3
+  Sepp1+(b) Mo-TAM        27    417         22         3     0        0
+  T cells                136    904        137        21     0      143
+  Transitory Mo-TAM       25    229         30         9     0        3
+  Unknown                 49   4118         21         5     0        0
+  Vascular               319    143        218        19     0       11
+                    
+                     OPC-Oligo plasma B cells prol. TAM Regulatory T cells
+  Astro-Epen              1761              0        72                 10
+  B cells                    8              1         4                  0
+  DC1                        8              1         7                  0
+  DC2                       49              1        40                  2
+  DC3                       49              0        27                  5
+  DC4                       74              4         8                  0
+  HY GABA                    0              0         0                  0
+  Hypoxic Mo-TAM             2              0         1                  0
+  IFN Mo-TAM                42              2        79                  0
+  Lipid Mo-TAM              50              0         4                  0
+  LQ                       186              0         6                  2
+  Mast cells                20              1        71                  2
+  Mg-TAM                   352              0        11                  0
+  MH-LH Glut                10              0         0                  0
+  Monocytes               1301             36      2016                 32
+  NK cells                  40              1         9                  0
+  OPC-Oligo              39641            192      1692                241
+  plasma B cells             9             38        21                  0
+  prol. TAM                360              0       616                  4
+  Regulatory T cells         3              0         7                 15
+  Sepp1+(a) Mo-TAM         336             12       243                  3
+  Sepp1+(b) Mo-TAM         751             11       410                  1
+  T cells                 1312             48      1686                147
+  Transitory Mo-TAM        266             16       624                  1
+  Unknown                 3055             96       181                  0
+  Vascular                2656             11       973                 32
+                    
+                     Sepp1+(a) Mo-TAM Sepp1+(b) Mo-TAM T cells TH Glut
+  Astro-Epen                       27               80       4     779
+  B cells                           4               13       0      11
+  DC1                               5                7       0      12
+  DC2                              24                8       4      51
+  DC3                              15               12       8     111
+  DC4                               7               22       1      20
+  HY GABA                           0                0       0       1
+  Hypoxic Mo-TAM                    1                0       0       2
+  IFN Mo-TAM                       33               16       0     148
+  Lipid Mo-TAM                     10              124       0      31
+  LQ                                2               28       2      22
+  Mast cells                        7                4       2      49
+  Mg-TAM                            2               13       0      44
+  MH-LH Glut                        0                0       0      82
+  Monocytes                      1238              815     110    2382
+  NK cells                         11                8       2      23
+  OPC-Oligo                      1352             7302     695    9986
+  plasma B cells                    3                3       2     213
+  prol. TAM                         9               12       5     374
+  Regulatory T cells                0                0       3      21
+  Sepp1+(a) Mo-TAM                309              729       3     350
+  Sepp1+(b) Mo-TAM                209              302       5     534
+  T cells                         449              550     485    1788
+  Transitory Mo-TAM               283              594      12     394
+  Unknown                         331             4023       5     403
+  Vascular                        165              107      95    5438
+                    
+                     Transitory Mo-TAM Unknown Vascular
+  Astro-Epen                         6       2      317
+  B cells                            0       0        8
+  DC1                                0       0        4
+  DC2                               19       0       54
+  DC3                                5       0       81
+  DC4                                3       1       16
+  HY GABA                            0       0        0
+  Hypoxic Mo-TAM                     0       0        7
+  IFN Mo-TAM                        23       0      207
+  Lipid Mo-TAM                       6       0       14
+  LQ                                 0       3        2
+  Mast cells                         2       0       64
+  Mg-TAM                             1       0       41
+  MH-LH Glut                         0       0        0
+  Monocytes                       1654       0     2807
+  NK cells                           2       0       29
+  OPC-Oligo                        459     141     4349
+  plasma B cells                     1       0       14
+  prol. TAM                          5       0      459
+  Regulatory T cells                 0       0       26
+  Sepp1+(a) Mo-TAM                  49       4      372
+  Sepp1+(b) Mo-TAM                  47       1      508
+  T cells                           89       6     1908
+  Transitory Mo-TAM                101       4      382
+  Unknown                           38      22      114
+  Vascular                         106       1    21600</code></pre>
+<pre class="r"><code>p1 &lt;- create_barplot(seurat_data, group_var = &quot;TACCO_myeloid_label&quot;,
+                     plot_var = seurat_cluster_var,
+                     plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     group_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+                     plot_colors = seurat_cluster_col,
+                     var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;), legend_title = &quot;Seurat cluster&quot;)
+
+p2 &lt;- create_barplot(seurat_data, group_var = seurat_cluster_var,
+                     plot_var = &quot;TACCO_myeloid_label&quot;,
+                     plot_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+                     group_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     plot_colors = TACCO_myeloid_label_col,
+                     var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;), legend_title = &quot;TACCO&quot;)
+
+p1 + p2</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-22-1.png" width="1344" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>p3 &lt;- create_barplot(seurat_data, group_var = &quot;predicted.id_tam&quot;,
+                     plot_var = seurat_cluster_var,
+                     plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     group_levels = sort(unique(seurat_data$predicted.id_tam)),
+                     plot_colors = seurat_cluster_col,
+                     var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;), legend_title = &quot;Seurat cluster&quot;)
+
+p4 &lt;- create_barplot(seurat_data, group_var = seurat_cluster_var,
+                     plot_var = &quot;predicted.id_tam&quot;,
+                     plot_levels = sort(unique(seurat_data$predicted.id_tam)),
+                     group_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     plot_colors = predicted.id_tam_col,
+                     var_names = c(&quot;Frequency (%)&quot;, &quot;&quot;), legend_title = &quot;Seurat label transfer&quot;)
+
+p3 + p4</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-22-2.png" width="1344" style="display: block; margin: auto;" /></p>
+</div>
+<div id="top-marker-expression" class="section level2">
+<h2>Top marker expression</h2>
+<p>Top positive markers for each annotation and each Seurat cluster.</p>
+<pre class="r"><code>seurat_data &lt;- JoinLayers(seurat_data)
+
+Idents(seurat_data) &lt;- seurat_data$TACCO_myeloid_label
+tacco_markers &lt;- FindAllMarkers(seurat_data, only.pos = TRUE,return.thresh = 0.1)
+tacco_markers_sig &lt;- tacco_markers %&gt;% group_by(cluster) %&gt;% top_n(n = 3, wt = avg_log2FC)
+
+cluster_dotplot(seurat_data, unique(tacco_markers_sig$gene),
+                group_var = &quot;TACCO_myeloid_label&quot;, flip = FALSE)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-23-1.png" width="1728" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Idents(seurat_data) &lt;- seurat_data[[seurat_cluster_var, drop = TRUE]]
+cluster_markers &lt;- FindAllMarkers(seurat_data, only.pos = TRUE)
+cluster_markers_sig &lt;- cluster_markers %&gt;% group_by(cluster) %&gt;% top_n(n = 5, wt = avg_log2FC)
+
+cluster_dotplot(seurat_data, unique(cluster_markers_sig$gene),
+                group_var = seurat_cluster_var, flip = FALSE)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-24-1.png" width="1920" style="display: block; margin: auto;" /></p>
+<p>Canonical lineage genes across Seurat clusters.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data,
+                c(&quot;Olig1&quot;, &quot;Olig2&quot;, &quot;Idh1&quot;, &quot;Egfr&quot;, &quot;Pten&quot;, &quot;Trp53&quot;,
+                  &quot;Ptprc&quot;, &quot;Col1a1&quot;, &quot;Col1a2&quot;, &quot;Vim&quot;),
+                group_var = seurat_cluster_var, flip = FALSE)</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-25-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DimPlot(seurat_data, reduction = &quot;sp&quot;, group.by = seurat_cluster_var) +
+  theme_classic() + coord_fixed() + NoAxes()</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-25-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>Per-spot QC by cluster.</p>
+<pre class="r"><code>qc_cols &lt;- intersect(c(&quot;nCount_Spatial&quot;, &quot;nFeature_Spatial&quot;, &quot;percent.mt&quot;),
+                     colnames(seurat_data@meta.data))
+
+seurat_data@meta.data %&gt;%
+  group_by(cluster = .data[[seurat_cluster_var]]) %&gt;%
+  dplyr::summarise(across(all_of(qc_cols), median), n = dplyr::n()) %&gt;%
+  arrange(cluster)</code></pre>
+<pre><code># A tibble: 24 × 5
+   cluster nCount_Spatial nFeature_Spatial percent.mt     n
+   &lt;fct&gt;            &lt;dbl&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;int&gt;
+ 1 0                 461              413           0 25817
+ 2 0_2               518.             440.          0    54
+ 3 1                 160              145           0 33638
+ 4 10                269              240           0 17793
+ 5 10_2              183              168           0   103
+ 6 11                212              195           0 13272
+ 7 12                456              406           0  9730
+ 8 12_2              502              429           0   305
+ 9 13                403              360           0  9399
+10 14                321              297           0  5259
+# ℹ 14 more rows</code></pre>
+<pre class="r"><code>VlnPlot(seurat_data, features = qc_cols, group.by = seurat_cluster_var, pt.size = 0, ncol = 1) &amp;
+  theme(axis.text.x = element_text(size = 7))</code></pre>
+<p><img src="figure/annotation.Rmd/unnamed-chunk-26-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="immune-markers-in-each-seurat-cluster" class="section level2">
+<h2>Immune markers in each Seurat cluster</h2>
+<p>Lymphoid, pan-immune and myeloid/TAM markers across every Seurat
+cluster. Aliases not in the panel are dropped automatically.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data, unique(c(lymph_markers, mouse_immune)),
+                group_var = seurat_cluster_var,
+                title = &quot;Immune markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/immune-by-cluster-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>Microglia vs. TAM markers by cluster (helps separate resident
+microglia from bone-marrow-derived TAMs).</p>
+<pre class="r"><code>cluster_dotplot(seurat_data, unique(c(mg_markers, tam_markers)),
+                group_var = seurat_cluster_var,
+                title = &quot;Microglia / TAM markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/immune-mg-tam-by-cluster-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="mouse-gbm-markers-in-each-seurat-cluster"
+class="section level2">
+<h2>Mouse GBM markers in each Seurat cluster</h2>
+<pre class="r"><code>cluster_dotplot(seurat_data, gbm_markers, group_var = seurat_cluster_var,
+                title = &quot;Mouse GBM / glioma markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/gbm-by-cluster-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="caf-markers-in-each-seurat-cluster" class="section level2">
+<h2>CAF markers in each Seurat cluster</h2>
+<p>CAF program markers (grouped: pan-CAF, myCAF, collagens/ECM, iCAF,
+apCAF) across Seurat clusters.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data, caf_markers, group_var = seurat_cluster_var,
+                title = &quot;CAF markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/caf-by-cluster-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="myeloid-expression" class="section level2">
+<h2>Myeloid expression</h2>
+<p>Immune / myeloid marker expression by Seurat cluster and by treatment
+× day, and top markers per treatment group within the immune
+clusters.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data,
+                unique(c(lymph_markers, mouse_immune, ifn_genes,
+                         grep(&quot;Ifn&quot;, rownames(seurat_data), value = TRUE))),
+                group_var = seurat_cluster_var,
+                title = &quot;Immune / myeloid markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/myeloid-cluster-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Immune-enriched Seurat clusters (edit the cluster ids to match the current
+# object&#39;s immune clusters in the new_cluster labelling).
+immune_clusters &lt;- intersect(c(&quot;0&quot;, &quot;1&quot;, &quot;3&quot;, &quot;5&quot;, &quot;12&quot;, &quot;13&quot;),
+                             as.character(unique(seurat_data@meta.data[[seurat_cluster_var]])))
+immune_only &lt;- subset(seurat_data,
+                      cells = colnames(seurat_data)[as.character(seurat_data@meta.data[[seurat_cluster_var]]) %in% immune_clusters])
+
+DotPlot(seurat_data,
+        features = present_features(seurat_data, unique(c(lymph_markers, mouse_immune, ifn_genes))),
+        group.by = &quot;Treatment_Day&quot;) &amp;
+  theme_classic() &amp; RotatedAxis() &amp; xlab(&quot;&quot;) &amp; ylab(&quot;&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/myeloid-treatment-1.png" width="1344" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>Idents(immune_only) &lt;- immune_only$Treatment_Day
+treatment_day_immune_markers &lt;- FindAllMarkers(immune_only, only.pos = TRUE)
+treatment_day_immune_markers_top &lt;- treatment_day_immune_markers %&gt;%
+  group_by(cluster) %&gt;% top_n(n = 10, wt = avg_log2FC)
+
+DotPlot(immune_only, features = unique(treatment_day_immune_markers_top$gene),
+        group.by = &quot;Treatment_Day&quot;) &amp;
+  theme_classic() &amp; RotatedAxis() &amp; xlab(&quot;&quot;) &amp; ylab(&quot;&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/myeloid-treatment-2.png" width="1344" style="display: block; margin: auto;" /></p>
+</div>
+<div id="caf-expression" class="section level2">
+<h2>CAF expression</h2>
+<p>CAF program markers by Seurat cluster and by treatment × day.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data, caf_markers, group_var = seurat_cluster_var,
+                title = &quot;CAF markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/caf-expression-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>DotPlot(seurat_data, features = present_features(seurat_data, caf_markers),
+        group.by = &quot;Treatment_Day&quot;) &amp;
+  theme_classic() &amp; coord_flip() &amp; RotatedAxis() &amp; xlab(&quot;&quot;) &amp; ylab(&quot;&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/caf-expression-2.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="lymphoid-expression" class="section level2">
+<h2>Lymphoid expression</h2>
+<p>Lymphoid marker expression by Seurat cluster and by treatment ×
+day.</p>
+<pre class="r"><code>cluster_dotplot(seurat_data, lymph_markers, group_var = seurat_cluster_var,
+                title = &quot;Lymphoid markers by Seurat cluster&quot;)</code></pre>
+<p><img src="figure/annotation.Rmd/lymphoid-expression-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>VlnPlot(seurat_data, features = present_features(seurat_data, c(&quot;Tigit&quot;, &quot;Cd8a&quot;, &quot;Cd3e&quot;, &quot;Cd4&quot;)),
+        split.by = &quot;Treatment&quot;, group.by = &quot;Day&quot;, pt.size = 0, ncol = 1,
+        cols = treatment_cols) &amp;
+  theme_classic()</code></pre>
+<p><img src="figure/annotation.Rmd/lymphoid-expression-2.png" width="768" style="display: block; margin: auto;" /></p>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.0 (2024-04-24)
+Platform: x86_64-pc-linux-gnu
+Running under: Ubuntu 22.04.4 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 
+LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so;  LAPACK version 3.10.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] ComplexHeatmap_2.20.0 viridis_0.6.5         viridisLite_0.4.2    
+ [4] RColorBrewer_1.1-3    scCustomize_2.1.2     gprofiler2_0.2.3     
+ [7] googlesheets4_1.1.1   lubridate_1.9.3       forcats_1.0.0        
+[10] stringr_1.5.1         purrr_1.0.2           readr_2.1.5          
+[13] tibble_3.2.1          tidyverse_2.0.0       ggrepel_0.9.5        
+[16] tidyr_1.3.1           patchwork_1.2.0       dplyr_1.1.4          
+[19] data.table_1.15.4     ggplot2_3.5.1         Seurat_5.1.0         
+[22] SeuratObject_5.0.2    sp_2.1-4             
+
+loaded via a namespace (and not attached):
+  [1] RcppAnnoy_0.0.22       splines_4.4.0          later_1.3.2           
+  [4] bitops_1.0-7           cellranger_1.1.0       polyclip_1.10-6       
+  [7] janitor_2.2.0          fastDummies_1.7.4      lifecycle_1.0.4       
+ [10] doParallel_1.0.17      rprojroot_2.0.4        globals_0.16.3        
+ [13] lattice_0.22-6         MASS_7.3-60.2          magrittr_2.0.3        
+ [16] limma_3.60.4           plotly_4.10.4          sass_0.4.9            
+ [19] rmarkdown_2.27         jquerylib_0.1.4        yaml_2.3.8            
+ [22] httpuv_1.6.15          sctransform_0.4.1      spam_2.10-0           
+ [25] spatstat.sparse_3.1-0  reticulate_1.38.0      cowplot_1.1.3         
+ [28] pbapply_1.7-2          abind_1.4-5            Rtsne_0.17            
+ [31] presto_1.0.0           RCurl_1.98-1.14        BiocGenerics_0.50.0   
+ [34] git2r_0.33.0           circlize_0.4.16        S4Vectors_0.42.1      
+ [37] IRanges_2.38.1         irlba_2.3.5.1          listenv_0.9.1         
+ [40] spatstat.utils_3.0-5   goftest_1.2-3          RSpectra_0.16-1       
+ [43] spatstat.random_3.2-3  fitdistrplus_1.1-11    parallelly_1.37.1     
+ [46] leiden_0.4.3.1         codetools_0.2-20       tidyselect_1.2.1      
+ [49] shape_1.4.6.1          farver_2.1.2           stats4_4.4.0          
+ [52] matrixStats_1.3.0      spatstat.explore_3.2-7 googledrive_2.1.1     
+ [55] jsonlite_1.8.8         GetoptLong_1.0.5       progressr_0.14.0      
+ [58] ggridges_0.5.6         survival_3.7-0         iterators_1.0.14      
+ [61] systemfonts_1.1.0      foreach_1.5.2          tools_4.4.0           
+ [64] ragg_1.3.2             ica_1.0-3              Rcpp_1.0.12           
+ [67] glue_1.7.0             gridExtra_2.3          xfun_0.44             
+ [70] withr_3.0.0            fastmap_1.2.0          fansi_1.0.6           
+ [73] digest_0.6.35          timechange_0.3.0       R6_2.5.1              
+ [76] mime_0.12              textshaping_0.4.0      ggprism_1.0.5         
+ [79] colorspace_2.1-0       scattermore_1.2        tensor_1.5            
+ [82] spatstat.data_3.1-2    utf8_1.2.4             generics_0.1.3        
+ [85] httr_1.4.7             htmlwidgets_1.6.4      uwot_0.2.2            
+ [88] pkgconfig_2.0.3        gtable_0.3.5           workflowr_1.7.1       
+ [91] lmtest_0.9-40          htmltools_0.5.8.1      dotCall64_1.1-1       
+ [94] clue_0.3-65            scales_1.3.0           png_0.1-8             
+ [97] snakecase_0.11.1       knitr_1.47             rstudioapi_0.16.0     
+[100] tzdb_0.4.0             reshape2_1.4.4         rjson_0.2.21          
+[103] nlme_3.1-165           cachem_1.1.0           zoo_1.8-12            
+[106] GlobalOptions_0.1.2    KernSmooth_2.23-24     parallel_4.4.0        
+[109] miniUI_0.1.1.1         vipor_0.4.7            ggrastr_1.0.2         
+[112] pillar_1.9.0           vctrs_0.6.5            RANN_2.6.1            
+[115] promises_1.3.0         xtable_1.8-4           cluster_2.1.6         
+[118] beeswarm_0.4.0         paletteer_1.6.0        evaluate_0.24.0       
+[121] cli_3.6.2              compiler_4.4.0         rlang_1.1.4           
+[124] crayon_1.5.2           future.apply_1.11.2    labeling_0.4.3        
+[127] rematch2_2.1.2         plyr_1.8.9             fs_1.6.4              
+[130] ggbeeswarm_0.7.2       stringi_1.8.4          deldir_2.0-4          
+[133] munsell_0.5.1          lazyeval_0.2.2         spatstat.geom_3.2-9   
+[136] Matrix_1.7-0           RcppHNSW_0.6.0         hms_1.1.3             
+[139] future_1.33.2          statmod_1.5.0          shiny_1.8.1.1         
+[142] highr_0.11             ROCR_1.0-11            gargle_1.5.2          
+[145] igraph_2.0.3           bslib_0.7.0           </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+https://docs.mathjax.org/en/latest/web/configuration.html. This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,877 @@
+---
+title: "Mouse Visium HD, spatial expression and cluster phenotyping"
+author: "heinin"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output:
+  workflowr::wflow_html:
+    code_folding: hide
+  html_notebook: default
+editor_options:
+  chunk_output_type: console
+---
+
+## Load packages
+
+```{r, warning=F, message=F}
+
+library(Seurat)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(patchwork)
+library(tidyr)
+library(ggrepel)
+library(tidyverse)
+library(googlesheets4)
+library(gprofiler2)
+library(scCustomize)
+library(RColorBrewer)
+
+```
+
+## Environment variables and helper functions
+
+```{r, message = F, warning = F}
+
+set.seed(1234)
+options(future.globals.maxSize = 30000 * 1024^2)
+options(scipen = 99999)
+options(ggrepel.max.overlaps = Inf)
+
+figdir <- "/home/hnatri/Mm_CARSPP1_VisiumHD/figures"
+
+# Project helper functions and themes (create_barplot(), plot themes, colors)
+source("/home/hnatri/Mm_CARSPP1_VisiumHD/code/CART_plot_functions.R")
+
+# Seurat cluster identity used throughout the marker / recluster sections. The
+# projected clustering at res 1.2 is the starting label: it is reclustered (see
+# the "Reclustering" section) into a `new_cluster` label, and from that point
+# on `seurat_cluster_var` is switched to "new_cluster" so annotation, markers
+# and the TACCO / predicted-ID comparisons all use the new clusters.
+seurat_cluster_var <- "projected_snn_res.1.2"
+
+# Assay used for reclustering. The sketch assay holds the sketched cells the
+# projected clustering was learned on; fall back to the default assay if absent.
+recluster_assay <- "sketch"
+
+```
+
+## Helper functions
+
+```{r, message = F, warning = F}
+
+# Keep only features present in the object's active (or named) assay, so DotPlot
+# / FeaturePlot never error on a gene absent from the panel. Marker vectors
+# below deliberately include aliases (e.g. "Cd11b", "NKp46") that are not row
+# names; those are dropped here.
+present_features <- function(sobj, features, assay = NULL) {
+  feats <- unique(features)
+  if (is.null(assay)) assay <- DefaultAssay(sobj)
+  avail <- rownames(sobj[[assay]])
+  keep <- feats[feats %in% avail]
+  missing <- setdiff(feats, keep)
+  if (length(missing))
+    message("Dropping genes not in assay '", assay, "': ",
+            paste(missing, collapse = ", "))
+  keep
+}
+
+# Compact DotPlot of `features` across the levels of `group_var`, in the shared
+# theme used throughout (classic theme, rotated axis, no axis titles). `flip`
+# puts genes on the y-axis (rows) for tall marker panels.
+cluster_dotplot <- function(sobj, features, group_var, flip = TRUE,
+                            title = NULL, cols = c("gray89", "tomato3")) {
+  feats <- present_features(sobj, features)
+  p <- DotPlot(sobj, features = feats, group.by = group_var, cols = cols) +
+    theme_classic() +
+    RotatedAxis() +
+    xlab("") + ylab("")
+  if (flip) p <- p + coord_flip()
+  if (!is.null(title)) p <- p + ggtitle(title)
+  p
+}
+
+# Full re-process of one Seurat cluster: subset, then re-run
+# FindVariableFeatures / ScaleData / PCA / UMAP / neighbors / clustering from
+# scratch on the sketch assay, producing a fresh "umap.sketch" reduction and a
+# `subcluster` label (parentCluster_subID). Heavier than reclustering on the
+# existing embedding, but gives clean, cluster-specific subclusters.
+recluster_subset <- function(sobj, cl, cluster_col = seurat_cluster_var,
+                             assay = recluster_assay, npcs = 30, dims = 1:30,
+                             res = 0.5) {
+  cells <- colnames(sobj)[!is.na(sobj@meta.data[[cluster_col]]) &
+                            sobj@meta.data[[cluster_col]] == cl]
+  sub <- subset(sobj, cells = cells)
+
+  DefaultAssay(sub) <- if (assay %in% Assays(sub)) assay else DefaultAssay(sub)
+
+  sub <- FindVariableFeatures(sub, verbose = FALSE)
+  sub <- ScaleData(sub, verbose = FALSE)
+  sub <- RunPCA(sub, npcs = npcs, reduction.name = "pca.sub", verbose = FALSE)
+  sub <- FindNeighbors(sub, reduction = "pca.sub", dims = dims, verbose = FALSE)
+  sub <- FindClusters(sub, resolution = res, verbose = FALSE)
+  sub <- RunUMAP(sub, reduction = "pca.sub", dims = dims,
+                 reduction.name = "umap.sketch",
+                 reduction.key = "umapsketch_", verbose = FALSE)
+
+  sub$subcluster <- paste0(cl, "_", as.character(sub$seurat_clusters))
+  sub$subcluster <- factor(sub$subcluster,
+                           levels = paste0(cl, "_",
+                                           sort(unique(as.integer(as.character(sub$seurat_clusters))))))
+  sub
+}
+
+```
+
+## Marker gene sets
+
+```{r, message = F, warning = F}
+
+# --- Mouse GBM / glioma markers -------------------------------------------
+# Human GBM driver genes mapped to mouse orthologs (Mgmt, Idh1, Idh2, Egfr,
+# Trp53, Tert), plus commonly used mouse glioma / lineage-state markers.
+gbm_genes_hs <- c("MGMT", "IDH1", "IDH2", "EGFR", "PTEN", "TP53", "TERT")
+gbm_genes <- tryCatch(
+  gorth(gbm_genes_hs, source_organism = "hsapiens",
+        target_organism = "mmusculus")$ortholog_name,
+  error = function(e) c("Mgmt", "Idh1", "Idh2", "Egfr", "Trp53", "Tert"))
+
+gbm_markers <- unique(c(gbm_genes,
+                        "Pten", "Trp53", "Egfr", "Pdgfra",
+                        "Olig1", "Olig2", "Sox2", "Gfap", "Nes", "Vim",
+                        "Mki67"))
+
+# --- Mouse immune markers -------------------------------------------------
+# Mouse Immune Cell Marker Summary (Mus musculus)
+#  - Total Leukocytes: Ptprc (CD45)
+#  - T Cells (Pan): Cd3e, Cd3g, Cd247 (CD3)
+#  - Helper T Cells: Cd4
+#  - Cytotoxic T Cells: Cd8a, Cd8b1
+#  - Regulatory T Cells (Tregs): Foxp3, Cd25 (Il2ra), Ctla4
+#  - B Cells: Cd19, Ms4a1 (CD20), Cd79a
+#  - NK Cells: Ncr1 (NKp46), Klrb1c (NK1.1), Cd226
+#  - Macrophages (Pan): Adgre1 (F4/80), Cd68, Cd11b (Itgam)
+#  - M1 Macrophages: Nos2 (iNOS), Cd80, Cd86
+#  - M2 Macrophages: Cd163, Mrc1 (CD206), Arg1
+#  - cDCs: Itgax (CD11c), H2-Ab1 (MHCII)
+#  - pDCs: Siglech, Bst2 (CD317)
+#  - Neutrophils: Ly6g, Ly6c, S100a8
+#  - Monocytes: Ly6c, Cd11b (Itgam)
+#  - HSPCs: Cd34, Kit (c-Kit)
+#  Activation / memory: Sell, Ccr7, Cd44, Il7r; exhaustion Pdcd1, Cd274, Havcr2
+mouse_immune <- c("Ptprc", "Cd3e", "Cd3g", "Cd247", "Cd4", "Cd8a", "Cd8b1",
+                  "Foxp3", "Cd25", "Il2ra", "Ctla4", "Cd19", "Ms4a1", "Cd79a",
+                  "Ncr1", "NKp46", "Klrb1c", "Cd226",
+                  "Adgre1", "Cd68", "Cd11b", "Itgam",
+                  "Nos2", "Cd80", "Cd86",
+                  "Cd163", "Mrc1", "Arg1", "Itgax", "Cd11c",
+                  "Siglech", "Bst2", "Ly6g", "Ly6c", "S100a8",
+                  "Cd34", "Kit",
+                  "Sell", "Ccr7", "Cd44", "Il7r",
+                  "Pdcd1", "Cd274", "Havcr2")
+
+lymph_markers <- c("Ptprc", "Cd3e", "Cd3g", "Cd247", "Cd4", "Cd8a", "Cd8b1",
+                   "Foxp3", "Cd25", "Il2ra", "Ctla4", "Cd19", "Ms4a1", "Cd79a",
+                   "Ncr1", "NKp46", "Klrb1c", "Cd226")
+
+# Microglia vs. bone-marrow-derived TAM markers.
+mg_markers  <- c("P2ry12", "Tmem119", "Cx3cr1", "Hexb", "Siglech",
+                 "Sall1", "Selplg", "Csf1r", "Aif1", "Fcrls", "C1qa", "C1qb")
+tam_markers <- c("Spp1", "C1qa", "C1qb", "C1qc", "Trem2", "Mrc1", "Cd163",
+                 "Apoe", "Gpnmb", "Cd68", "Adgre1", "Itgam", "Tnfrsf12a", "Tnfsf12")
+
+# SPP1 / Tweak-Fn14 axis and interferon genes used across the treatment panels.
+spp1_axis   <- c("Spp1", "C1qa", "Tnfrsf12a", "Tnfsf12")
+ifn_genes   <- c("Spp1", "Jak1", "Jak2")   # grep("Ifn", ...) appended at runtime
+
+# --- Mouse CAF markers ----------------------------------------------------
+# Mouse orthologs of the CAF program panels, grouped by program. Genes absent
+# from the Visium HD panel are dropped by present_features().
+caf_groups <- list(
+  "Pan-CAF / identity"      = c("Pdgfra", "Pdgfrb", "Dcn", "Lum", "Vcan",
+                                "Sparc", "Thy1", "Fap", "Pdpn", "Col1a1",
+                                "Col1a2"),
+  "myCAF / contractile"     = c("Acta2", "Tagln", "Tgfb1", "Tgfbi", "Postn",
+                                "Myl9", "Myh11", "Tpm1", "Tpm2"),
+  "Collagens / ECM"         = c("Col3a1", "Col5a1", "Col5a2", "Col6a1",
+                                "Col6a2", "Col6a3", "Col4a1", "Fn1", "Bgn",
+                                "Mgp", "Aspn", "Comp", "Sfrp2", "Sfrp4",
+                                "Mmp2", "Timp1"),
+  "iCAF / inflammatory"     = c("Il6", "Il1b", "Cxcl1", "Cxcl12", "Cxcl14",
+                                "Ccl2", "Pdgfra"),
+  "apCAF / antigen pres."   = c("Cd74", "H2-Ab1", "H2-Aa", "H2-Eb1"))
+
+caf_markers <- unique(unlist(caf_groups, use.names = FALSE))
+
+# --- Lineage marker panel for subcluster phenotyping ----------------------
+# Used to read out what each reclustered subcluster is (major CNS / TME
+# lineages), grouped by lineage.
+lineage_groups <- list(
+  "Glioma / tumor"    = c("Olig1", "Olig2", "Sox2", "Egfr", "Pdgfra",
+                          "Pten", "Trp53", "Mki67", "Vim"),
+  "Astrocyte"         = c("Gfap", "Aqp4", "Slc1a3", "Aldh1l1"),
+  "Oligodendrocyte"   = c("Mbp", "Plp1", "Mog", "Sox10", "Mag"),
+  "Neuron"            = c("Rbfox3", "Snap25", "Syt1", "Meg3"),
+  "Microglia"         = c("P2ry12", "Tmem119", "Cx3cr1", "Hexb", "Sall1"),
+  "TAM / macrophage"  = c("C1qa", "C1qb", "Aif1", "Csf1r", "Cd68", "Adgre1",
+                          "Mrc1", "Spp1"),
+  "T / NK cell"       = c("Cd3e", "Cd8a", "Cd4", "Nkg7", "Klrb1c"),
+  "B cell"            = c("Cd19", "Ms4a1", "Cd79a"),
+  "Fibroblast / CAF"  = c("Col1a1", "Col1a2", "Dcn", "Pdgfra", "Acta2"),
+  "Endothelial"       = c("Pecam1", "Cldn5", "Flt1"),
+  "Pericyte / mural"  = c("Rgs5", "Pdgfrb", "Notch3", "Cd248"))
+
+lineage_markers <- unique(unlist(lineage_groups, use.names = FALSE))
+
+```
+
+## Import data
+
+```{r, warning=F, message=F}
+
+# The final object with all TACCO labels.
+seurat_data <- readRDS("/tgen_labs/banovich/BCTCSF/Mm_VisiumHD/tumor_obj_w_all_tacco_labels_09_09_2026.rds")
+
+# Fixing TMA3 treatment group
+seurat_data$Treatment <- ifelse(seurat_data$TMA == 3 & seurat_data$Sample %in% c(166, 159),
+                                "Anti-Spp1", seurat_data$Treatment)
+seurat_data$Treatment <- gsub(" ", "", seurat_data$Treatment)
+seurat_data$Treatment <- gsub("Anti-Spp1/CAR", "Anti-Spp1+CAR", seurat_data$Treatment)
+table(seurat_data$Treatment, seurat_data$TMA)
+
+# Treatment_Day, ordered for all downstream grouping.
+seurat_data$Treatment_Day <- paste0(seurat_data$Treatment, "_", seurat_data$Day)
+seurat_data$Treatment_Day <- factor(seurat_data$Treatment_Day,
+                                    levels = c("Tumor_16", "Tumor_20",
+                                               "Anti-Spp1_16", "Anti-Spp1_20",
+                                               "CAR_16", "CAR_20",
+                                               "Anti-Spp1+CAR_16", "Anti-Spp1+CAR_20"))
+
+```
+
+Colors for treatment and day, reused throughout.
+
+```{r, warning=F, message=F}
+
+treatment_cols <- c("Anti-Spp1+CAR" = "aquamarine3",
+                    "CAR"           = "cyan4",
+                    "Anti-Spp1"     = "mediumpurple",
+                    "Tumor"         = "deeppink3")
+
+day_cols <- c("16" = "gray40",
+              "20" = "azure3")
+
+```
+
+Panel-present gene counts, used to size the marker dot plots (≈0.22 in / gene).
+
+```{r, warning=F, message=F}
+
+n_immune_genes  <- length(present_features(seurat_data, unique(c(lymph_markers, mouse_immune))))
+n_gbm_genes     <- length(present_features(seurat_data, gbm_markers))
+n_caf_genes     <- length(present_features(seurat_data, caf_markers))
+n_lineage_genes <- length(present_features(seurat_data, lineage_markers))
+
+```
+
+## Spatial overview
+
+Treatment and day across the spatial embedding.
+
+```{r, warning=F, message=F, fig.width = 20, fig.height = 8}
+
+p1 <- DimPlot(seurat_data, reduction = "sp", group.by = "Treatment",
+              cols = treatment_cols) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+p2 <- DimPlot(seurat_data, reduction = "sp", group.by = "Day",
+              cols = day_cols) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+p1 / p2
+
+pdf(file.path(figdir, "VisiumHD_dimplot_treatment.pdf"), width = 20, height = 8)
+p1
+dev.off()
+
+pdf(file.path(figdir, "VisiumHD_dimplot_day.pdf"), width = 20, height = 8)
+p2
+dev.off()
+
+```
+
+Counts and features per spot.
+
+```{r, warning=F, message=F, fig.width = 20, fig.height = 12}
+
+FeaturePlot(seurat_data, reduction = "sp",
+            features = c("nCount_Spatial", "nFeature_Spatial"),
+            ncol = 1, raster = TRUE) &
+  theme_classic() & coord_fixed()
+
+pdf(file.path(figdir, "VisiumHD_counts_features.pdf"), width = 20, height = 12)
+FeaturePlot(seurat_data, reduction = "sp",
+            features = c("nCount_Spatial", "nFeature_Spatial"),
+            ncol = 1, raster = TRUE) &
+  theme_classic() & coord_fixed()
+dev.off()
+
+```
+
+## GBM / glioma gene expression
+
+Mouse orthologs of the human GBM driver panel across the tissue.
+
+```{r, warning=F, message=F, fig.width = 12, fig.height = 24}
+
+FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data, c(gbm_genes, "C1qa")),
+                     reduction = "sp", num_columns = 1, raster = FALSE, order = TRUE)
+
+ggsave(file.path(figdir, "VisiumHD_GBM_genes.png"), width = 12, height = 24)
+
+```
+
+## Tumor microenvironment marker plots
+
+Immune, SPP1 / Tweak-Fn14 axis and structural markers across the tissue.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 26}
+
+FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data,
+                                c("Tigit", "Cd8a", "Cd3e", "Spp1", "Tnfrsf12a",
+                                  "Tnfsf12", "C1qa", "Cd44", "Col1a1", "Pten")),
+                     reduction = "sp", num_columns = 1,
+                     slot = "data", pt.size = 1, na_cutoff = 1, order = TRUE) &
+  coord_fixed() & NoAxes()
+
+ggsave(file.path(figdir, "VisiumHD_TME_genes.png"), width = 10, height = 26)
+
+```
+
+SPP1 axis and interferon signaling.
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 12}
+
+FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data, spp1_axis),
+                     reduction = "sp", num_columns = 1,
+                     slot = "data", pt.size = 1, na_cutoff = 1, order = TRUE) &
+  coord_fixed() & NoAxes()
+
+ifn_features <- present_features(seurat_data,
+                                 c(ifn_genes, grep("Ifn", rownames(seurat_data), value = TRUE)))
+
+FeaturePlot_scCustom(seurat_object = seurat_data,
+                     features = present_features(seurat_data,
+                                c("Spp1", "Jak1", "Jak2", "Ifna", "Ifnb1")),
+                     reduction = "sp", num_columns = 1,
+                     slot = "data", pt.size = 1, na_cutoff = 1, order = TRUE) &
+  coord_fixed() & NoAxes()
+
+```
+
+## Marker expression by treatment and day
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 10}
+
+VlnPlot(seurat_data, features = present_features(seurat_data, spp1_axis),
+        split.by = "Treatment", group.by = "Day", pt.size = 0, ncol = 1,
+        cols = treatment_cols) &
+  theme_classic()
+
+DotPlot(seurat_data,
+        features = present_features(seurat_data, c(ifn_genes, grep("Ifn", rownames(seurat_data), value = TRUE))),
+        group.by = "Treatment_Day") &
+  theme_classic() & coord_flip() & RotatedAxis() & xlab("") & ylab("")
+
+```
+
+Summary dot plot across treatment × day.
+
+```{r, warning=F, message=F, fig.width = 5, fig.height = 3}
+
+dotp <- DotPlot(seurat_data,
+        features = present_features(seurat_data,
+                   c("Tigit", "Cd8a", "Cd3e", "Spp1", "C1qa", "Cd44", "Col1a1", "Pten")),
+        group.by = "Treatment_Day",
+        cols = c("gray89", "tomato3")) +
+  coord_flip() + theme_classic() + RotatedAxis() + xlab("") + ylab("")
+dotp
+
+pdf(file.path(figdir, "VisiumHD_dotplot.pdf"), width = 5, height = 3)
+dotp
+dev.off()
+
+```
+
+TAM-focused SPP1 axis by treatment × day.
+
+```{r, warning=F, message=F, fig.width = 6, fig.height = 8}
+
+tams <- subset(seurat_data,
+               subset = predicted.id_class_immune %in% c("TAM 1", "TAM 2", "prol. TAM"))
+
+DotPlot(tams, features = present_features(tams, spp1_axis),
+        group.by = "Treatment_Day") &
+  theme_classic()
+
+VlnPlot(tams, features = present_features(tams, spp1_axis),
+        group.by = "Treatment_Day", split.by = "predicted.id_class_immune",
+        pt.size = 0, ncol = 1, cols = treatment_cols) &
+  theme_classic() & RotatedAxis() & xlab("")
+
+```
+
+## Reclustering each Seurat cluster and building the working cluster label
+
+Each Seurat cluster (`projected_snn_res.1.2`) is subset and fully re-processed
+from scratch (FindVariableFeatures → ScaleData → PCA → UMAP → neighbors →
+clustering) on the `r recluster_assay` assay, producing a fresh `umap.sketch`
+embedding and a `subcluster` label. Cluster 2 is reclustered at a higher
+resolution than the other clusters. Selected subclusters are then split out into
+their own clusters while every other spot keeps its `projected_snn_res.1.2`
+label, giving a `new_cluster` label. From this point on `new_cluster` is the
+primary Seurat cluster identity, used for annotation, marker discovery and the
+TACCO / predicted-ID comparisons below.
+
+```{r recluster-all, warning=F, message=F, results = "hide"}
+
+# Base clustering to recluster is always the projected res 1.2 label, regardless
+# of what seurat_cluster_var is later switched to.
+recluster_base_var <- "projected_snn_res.1.2"
+
+clusters_to_recluster <- setdiff(sort(unique(as.character(seurat_data@meta.data[[recluster_base_var]]))),
+                                 "NA")
+
+# Per-cluster reclustering resolution: default 0.5, higher for cluster 2.
+recluster_res <- setNames(rep(0.5, length(clusters_to_recluster)), clusters_to_recluster)
+if ("2" %in% names(recluster_res)) recluster_res["2"] <- 1.0
+
+# Re-process each cluster once; results reused by the per-cluster chunks below.
+recluster_list <- lapply(clusters_to_recluster, function(cl)
+  tryCatch(recluster_subset(seurat_data, cl, cluster_col = recluster_base_var,
+                            res = recluster_res[[cl]]),
+           error = function(e) { message("Recluster failed for ", cl, ": ", conditionMessage(e)); NULL }))
+names(recluster_list) <- clusters_to_recluster
+recluster_list <- recluster_list[!vapply(recluster_list, is.null, logical(1))]
+
+```
+
+Build the merged `new_cluster` label: split out the requested subclusters, keep
+everything else at its `projected_snn_res.1.2` label.
+
+```{r build-new-cluster, warning=F, message=F}
+
+# Collect the per-cell subcluster labels (parentCluster_subID) from every
+# reclustered subset back onto the full object.
+subcluster_map <- setNames(rep(NA_character_, ncol(seurat_data)), colnames(seurat_data))
+for (cl in names(recluster_list)) {
+  sub <- recluster_list[[cl]]
+  subcluster_map[colnames(sub)] <- as.character(sub$subcluster)
+}
+seurat_data$subcluster <- subcluster_map
+
+# Subclusters to break out into their own clusters. Any spot NOT in this list
+# keeps its projected_snn_res.1.2 label ("combine other").
+separate_subclusters <- c("0_2",
+                          "1_2", "1_3",
+                          "10_2", "10_3",
+                          "12_2",
+                          "14_2",
+                          "4_2",
+                          "5_2",
+                          "6_3",
+                          "9_3")
+
+seurat_data$new_cluster <- as.character(seurat_data@meta.data[[recluster_base_var]])
+split_idx <- !is.na(seurat_data$subcluster) & seurat_data$subcluster %in% separate_subclusters
+seurat_data$new_cluster[split_idx] <- seurat_data$subcluster[split_idx]
+
+# NA handling + ordered factor.
+seurat_data$new_cluster <- ifelse(is.na(seurat_data$new_cluster), "NA", seurat_data$new_cluster)
+seurat_data$new_cluster <- factor(seurat_data$new_cluster,
+                                  levels = sort(unique(seurat_data$new_cluster)))
+
+# Sanity check: how many spots ended up in each (sub)cluster, and confirm every
+# requested subcluster was actually found and split out.
+print(table(seurat_data$new_cluster))
+missing_split <- setdiff(separate_subclusters, unique(seurat_data$subcluster))
+if (length(missing_split))
+  message("Requested subclusters not found at the current resolution: ",
+          paste(missing_split, collapse = ", "))
+
+# Use the new clusters as the primary Seurat cluster identity from here on
+# (annotation, markers, TACCO / predicted-ID comparisons).
+seurat_cluster_var <- "new_cluster"
+
+# Palette for the new clusters, reused throughout.
+seurat_cluster_col <- colorRampPalette(brewer.pal(12, "Paired"))(length(levels(seurat_data$new_cluster)))
+names(seurat_cluster_col) <- levels(seurat_data$new_cluster)
+
+```
+
+Subcluster UMAPs.
+
+```{r recluster-umaps, warning=F, message=F, fig.width = 12, fig.height = max(4, 3 * ceiling(length(recluster_list) / 3))}
+
+umap_plots <- lapply(names(recluster_list), function(cl) {
+  DimPlot(recluster_list[[cl]], reduction = "umap.sketch",
+          group.by = "subcluster", label = TRUE, repel = TRUE) +
+    theme_classic() + NoLegend() +
+    ggtitle(paste0("Cluster ", cl, " subclusters"))
+})
+wrap_plots(umap_plots, ncol = 3)
+
+```
+
+Lineage markers in the subclusters of each Seurat cluster.
+
+```{r recluster-lineage-dot, warning=F, message=F, fig.width = 5, fig.height = max(4, 0.25 * n_lineage_genes)}
+
+for (cl in names(recluster_list)) {
+  print(cluster_dotplot(recluster_list[[cl]], lineage_markers,
+                        group_var = "subcluster",
+                        title = paste0("Lineage markers in cluster ", cl, " subclusters")))
+}
+
+```
+
+Immune, GBM and CAF markers within each cluster's subclusters.
+
+```{r recluster-marker-panels, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.22 * n_immune_genes)}
+
+for (cl in names(recluster_list)) {
+  sub <- recluster_list[[cl]]
+  print(cluster_dotplot(sub, unique(c(lymph_markers, mouse_immune)),
+                        group_var = "subcluster",
+                        title = paste0("Immune markers, cluster ", cl, " subclusters")))
+  print(cluster_dotplot(sub, gbm_markers, group_var = "subcluster",
+                        title = paste0("GBM markers, cluster ", cl, " subclusters")))
+  print(cluster_dotplot(sub, caf_markers, group_var = "subcluster",
+                        title = paste0("CAF markers, cluster ", cl, " subclusters")))
+}
+
+```
+
+New cluster label on the tissue.
+
+```{r new-cluster-sp, warning=F, message=F, fig.width = 10, fig.height = 8}
+
+DimPlot(seurat_data, reduction = "sp", group.by = seurat_cluster_var,
+        cols = seurat_cluster_col) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+```
+
+## Cell type annotations
+
+```{r, warning=F, message=F}
+
+seurat_data$TACCO_myeloid_label <- ifelse(is.na(seurat_data$TACCO_myeloid_label),
+                                          "NA", seurat_data$TACCO_myeloid_label)
+seurat_data$predicted.id_tam    <- ifelse(is.na(seurat_data$predicted.id_tam),
+                                          "NA", seurat_data$predicted.id_tam)
+
+# The primary Seurat cluster label is now `new_cluster` (built in the
+# reclustering section from projected_snn_res.1.2 with selected subclusters
+# split out); its factor levels and palette (seurat_cluster_col) are set there.
+
+TACCO_myeloid_label_col <- colorRampPalette(brewer.pal(10, "Paired"))(length(unique(seurat_data$TACCO_myeloid_label)))
+names(TACCO_myeloid_label_col) <- sort(unique(seurat_data$TACCO_myeloid_label))
+
+predicted.id_tam_col <- colorRampPalette(brewer.pal(10, "Paired"))(length(unique(seurat_data$predicted.id_tam)))
+names(predicted.id_tam_col) <- sort(unique(seurat_data$predicted.id_tam))
+
+```
+
+TACCO myeloid label on the tissue.
+
+```{r, warning=F, message=F, fig.width = 10, fig.height = 8}
+
+DimPlot(seurat_data, group.by = "TACCO_myeloid_label", reduction = "sp") &
+  coord_fixed()
+
+```
+
+Cell type composition by treatment × day.
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+
+create_barplot(seurat_data,
+               group_var = "Treatment_Day",
+               plot_var = "TACCO_myeloid_label",
+               plot_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+               group_levels = levels(seurat_data$Treatment_Day),
+               plot_colors = TACCO_myeloid_label_col,
+               var_names = c("Frequency (%)", ""),
+               legend_title = "Cell type")
+
+```
+
+Per-sample proportions with treatment × day distribution.
+
+```{r, warning=F, message=F, fig.width = 13, fig.height = 8}
+
+prop_df <- seurat_data@meta.data %>%
+  dplyr::count(Sample, Treatment_Day, TACCO_myeloid_label, name = "n") %>%
+  dplyr::group_by(Sample) %>%
+  dplyr::mutate(prop = n / sum(n)) %>%
+  dplyr::ungroup() %>%
+  tidyr::complete(tidyr::nesting(Sample, Treatment_Day), TACCO_myeloid_label,
+                  fill = list(n = 0, prop = 0))
+
+ggplot(prop_df, aes(x = Treatment_Day, y = prop, fill = Treatment_Day)) +
+  geom_violin(scale = "width", trim = FALSE, alpha = 0.7) +
+  geom_jitter(width = 0.12, size = 0.9, alpha = 0.8) +
+  facet_wrap(~ TACCO_myeloid_label, scales = "free_y") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = NULL, y = "Proportion of cells") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+Seurat cluster composition by treatment × day.
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
+
+create_barplot(seurat_data,
+               group_var = "Treatment_Day",
+               plot_var = seurat_cluster_var,
+               plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+               group_levels = levels(seurat_data$Treatment_Day),
+               plot_colors = seurat_cluster_col,
+               var_names = c("Frequency (%)", ""),
+               legend_title = "Seurat cluster")
+
+```
+
+## Annotation concordance
+
+Cross-tabulations and paired bar plots between the new Seurat clusters
+(`new_cluster`), the TACCO myeloid labels, and the Seurat label-transfer TAM
+annotation.
+
+```{r, warning=F, message=F}
+
+table(seurat_data@meta.data[[seurat_cluster_var]], seurat_data$TACCO_myeloid_label)
+table(seurat_data@meta.data[[seurat_cluster_var]], seurat_data$predicted.id_tam)
+table(seurat_data$predicted.id_tam, seurat_data$TACCO_myeloid_label)
+
+```
+
+```{r, warning=F, message=F, fig.width = 18, fig.height = 6}
+
+p1 <- create_barplot(seurat_data, group_var = "TACCO_myeloid_label",
+                     plot_var = seurat_cluster_var,
+                     plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     group_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+                     plot_colors = seurat_cluster_col,
+                     var_names = c("Frequency (%)", ""), legend_title = "Seurat cluster")
+
+p2 <- create_barplot(seurat_data, group_var = seurat_cluster_var,
+                     plot_var = "TACCO_myeloid_label",
+                     plot_levels = sort(unique(seurat_data$TACCO_myeloid_label)),
+                     group_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     plot_colors = TACCO_myeloid_label_col,
+                     var_names = c("Frequency (%)", ""), legend_title = "TACCO")
+
+p1 + p2
+
+p3 <- create_barplot(seurat_data, group_var = "predicted.id_tam",
+                     plot_var = seurat_cluster_var,
+                     plot_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     group_levels = sort(unique(seurat_data$predicted.id_tam)),
+                     plot_colors = seurat_cluster_col,
+                     var_names = c("Frequency (%)", ""), legend_title = "Seurat cluster")
+
+p4 <- create_barplot(seurat_data, group_var = seurat_cluster_var,
+                     plot_var = "predicted.id_tam",
+                     plot_levels = sort(unique(seurat_data$predicted.id_tam)),
+                     group_levels = sort(unique(seurat_data@meta.data[[seurat_cluster_var]])),
+                     plot_colors = predicted.id_tam_col,
+                     var_names = c("Frequency (%)", ""), legend_title = "Seurat label transfer")
+
+p3 + p4
+
+```
+
+## Top marker expression
+
+Top positive markers for each annotation and each Seurat cluster.
+
+```{r, warning=F, message=F, fig.width = 18, fig.height = 6}
+
+seurat_data <- JoinLayers(seurat_data)
+
+Idents(seurat_data) <- seurat_data$TACCO_myeloid_label
+tacco_markers <- FindAllMarkers(seurat_data, only.pos = TRUE,return.thresh = 0.1)
+tacco_markers_sig <- tacco_markers %>% group_by(cluster) %>% top_n(n = 3, wt = avg_log2FC)
+
+cluster_dotplot(seurat_data, unique(tacco_markers_sig$gene),
+                group_var = "TACCO_myeloid_label", flip = FALSE)
+
+```
+
+```{r, warning=F, message=F, fig.width = 20, fig.height = 6}
+
+Idents(seurat_data) <- seurat_data[[seurat_cluster_var, drop = TRUE]]
+cluster_markers <- FindAllMarkers(seurat_data, only.pos = TRUE)
+cluster_markers_sig <- cluster_markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_log2FC)
+
+cluster_dotplot(seurat_data, unique(cluster_markers_sig$gene),
+                group_var = seurat_cluster_var, flip = FALSE)
+
+# Saving
+cluster_markers_more <- cluster_markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
+
+write.table(cluster_markers_more, "/home/hnatri/VisiumHD_cluster_markers_top10.tsv",
+            quote = F, sep = "\t")
+
+```
+
+Canonical lineage genes across Seurat clusters.
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 6}
+
+cluster_dotplot(seurat_data,
+                c("Olig1", "Olig2", "Idh1", "Egfr", "Pten", "Trp53",
+                  "Ptprc", "Col1a1", "Col1a2", "Vim"),
+                group_var = seurat_cluster_var, flip = FALSE)
+
+DimPlot(seurat_data, reduction = "sp", group.by = seurat_cluster_var) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+```
+
+Per-spot QC by cluster.
+
+```{r, warning=F, message=F, fig.width = 8, fig.height = 12}
+
+qc_cols <- intersect(c("nCount_Spatial", "nFeature_Spatial", "percent.mt"),
+                     colnames(seurat_data@meta.data))
+
+seurat_data@meta.data %>%
+  group_by(cluster = .data[[seurat_cluster_var]]) %>%
+  dplyr::summarise(across(all_of(qc_cols), median), n = dplyr::n()) %>%
+  arrange(cluster)
+
+VlnPlot(seurat_data, features = qc_cols, group.by = seurat_cluster_var, pt.size = 0, ncol = 1) &
+  theme(axis.text.x = element_text(size = 7))
+
+```
+
+## Immune markers in each Seurat cluster
+
+```{r immune-by-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.22 * n_immune_genes)}
+
+cluster_dotplot(seurat_data, unique(c(lymph_markers, mouse_immune)),
+                group_var = seurat_cluster_var,
+                title = "Immune markers by Seurat cluster")
+
+```
+
+Microglia vs. TAM markers by cluster (helps separate resident microglia vs.TAMs).
+
+```{r immune-mg-tam-by-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.3 * length(present_features(seurat_data, c(mg_markers, tam_markers))))}
+
+cluster_dotplot(seurat_data, unique(c(mg_markers, tam_markers)),
+                group_var = seurat_cluster_var,
+                title = "Microglia / TAM markers by Seurat cluster")
+
+```
+
+## Mouse GBM markers in each Seurat cluster
+
+```{r gbm-by-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.3 * n_gbm_genes)}
+
+cluster_dotplot(seurat_data, gbm_markers, group_var = seurat_cluster_var,
+                title = "Mouse GBM / glioma markers by Seurat cluster")
+
+```
+
+## CAF markers in each Seurat cluster
+
+CAF program markers (pan-CAF, myCAF, collagens/ECM, iCAF, apCAF)
+across Seurat clusters.
+
+```{r caf-by-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.25 * n_caf_genes)}
+
+cluster_dotplot(seurat_data, caf_markers, group_var = seurat_cluster_var,
+                title = "CAF markers by Seurat cluster")
+
+```
+
+## Myeloid expression
+
+Immune / myeloid marker expression by Seurat cluster and by treatment × day,
+and top markers per treatment group within the immune clusters.
+
+```{r myeloid-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.22 * n_immune_genes)}
+
+cluster_dotplot(seurat_data,
+                unique(c(lymph_markers, mouse_immune, ifn_genes,
+                         grep("Ifn", rownames(seurat_data), value = TRUE))),
+                group_var = seurat_cluster_var,
+                title = "Immune / myeloid markers by Seurat cluster")
+
+```
+
+TODO: subset clusters
+
+```{r myeloid-treatment, warning=F, message=F, fig.width = 14, fig.height = 5}
+
+immune_clusters <- intersect(c("4", "4_2", "10_2", "12", "12_2", "5", "5_2"),
+                             as.character(unique(seurat_data@meta.data[[seurat_cluster_var]])))
+immune_only <- subset(seurat_data,
+                      cells = colnames(seurat_data)[as.character(seurat_data@meta.data[[seurat_cluster_var]]) %in% immune_clusters])
+
+DotPlot(seurat_data,
+        features = present_features(seurat_data, unique(c(lymph_markers, mouse_immune, ifn_genes))),
+        group.by = "Treatment_Day") &
+  theme_classic() & RotatedAxis() & xlab("") & ylab("")
+
+Idents(immune_only) <- immune_only$Treatment_Day
+treatment_day_immune_markers <- FindAllMarkers(immune_only, only.pos = TRUE)
+treatment_day_immune_markers_top <- treatment_day_immune_markers %>%
+  group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
+
+DotPlot(immune_only, features = unique(treatment_day_immune_markers_top$gene),
+        group.by = "Treatment_Day") &
+  theme_classic() & RotatedAxis() & xlab("") & ylab("")
+
+```
+
+## CAF expression
+
+CAF program markers by Seurat cluster and by treatment × day.
+
+```{r caf-expression, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.25 * n_caf_genes)}
+
+cluster_dotplot(seurat_data, caf_markers, group_var = seurat_cluster_var,
+                title = "CAF markers by Seurat cluster")
+
+DotPlot(seurat_data, features = present_features(seurat_data, caf_markers),
+        group.by = "Treatment_Day") &
+  theme_classic() & coord_flip() & RotatedAxis() & xlab("") & ylab("")
+
+```
+
+## Lymphoid expression
+
+Lymphoid marker expression by Seurat cluster and by treatment × day.
+
+```{r lymphoid-expression, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.3 * length(present_features(seurat_data, lymph_markers)))}
+
+cluster_dotplot(seurat_data, lymph_markers, group_var = seurat_cluster_var,
+                title = "Lymphoid markers by Seurat cluster")
+
+VlnPlot(seurat_data, features = present_features(seurat_data, c("Tigit", "Cd8a", "Cd3e", "Cd4")),
+        split.by = "Treatment", group.by = "Day", pt.size = 0, ncol = 1,
+        cols = treatment_cols) &
+  theme_classic()
+
+```

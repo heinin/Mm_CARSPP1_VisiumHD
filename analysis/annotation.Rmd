@@ -1,7 +1,7 @@
 ---
 title: "Mouse Visium HD, spatial expression and cluster phenotyping"
 author: "heinin"
-date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+date: "2026-09-09"
 output:
   workflowr::wflow_html:
     code_folding: hide
@@ -127,7 +127,7 @@ recluster_subset <- function(sobj, cl, cluster_col = seurat_cluster_var,
 
 ```{r, message = F, warning = F}
 
-# --- Mouse GBM / glioma markers -------------------------------------------
+# Mouse GBM / glioma markers
 # Human GBM driver genes mapped to mouse orthologs (Mgmt, Idh1, Idh2, Egfr,
 # Trp53, Tert), plus commonly used mouse glioma / lineage-state markers.
 gbm_genes_hs <- c("MGMT", "IDH1", "IDH2", "EGFR", "PTEN", "TP53", "TERT")
@@ -141,8 +141,7 @@ gbm_markers <- unique(c(gbm_genes,
                         "Olig1", "Olig2", "Sox2", "Gfap", "Nes", "Vim",
                         "Mki67"))
 
-# --- Mouse immune markers -------------------------------------------------
-# Mouse Immune Cell Marker Summary (Mus musculus)
+# Mouse immune markers
 #  - Total Leukocytes: Ptprc (CD45)
 #  - T Cells (Pan): Cd3e, Cd3g, Cd247 (CD3)
 #  - Helper T Cells: Cd4
@@ -174,19 +173,16 @@ lymph_markers <- c("Ptprc", "Cd3e", "Cd3g", "Cd247", "Cd4", "Cd8a", "Cd8b1",
                    "Foxp3", "Cd25", "Il2ra", "Ctla4", "Cd19", "Ms4a1", "Cd79a",
                    "Ncr1", "NKp46", "Klrb1c", "Cd226")
 
-# Microglia vs. bone-marrow-derived TAM markers.
+# Microglia vs. bone-marrow-derived TAM markers
 mg_markers  <- c("P2ry12", "Tmem119", "Cx3cr1", "Hexb", "Siglech",
                  "Sall1", "Selplg", "Csf1r", "Aif1", "Fcrls", "C1qa", "C1qb")
 tam_markers <- c("Spp1", "C1qa", "C1qb", "C1qc", "Trem2", "Mrc1", "Cd163",
                  "Apoe", "Gpnmb", "Cd68", "Adgre1", "Itgam", "Tnfrsf12a", "Tnfsf12")
 
-# SPP1 / Tweak-Fn14 axis and interferon genes used across the treatment panels.
-spp1_axis   <- c("Spp1", "C1qa", "Tnfrsf12a", "Tnfsf12")
-ifn_genes   <- c("Spp1", "Jak1", "Jak2")   # grep("Ifn", ...) appended at runtime
+# SPP1
+spp1_axis <- c("Spp1", "Jak1", "Jak2")
 
-# --- Mouse CAF markers ----------------------------------------------------
-# Mouse orthologs of the CAF program panels, grouped by program. Genes absent
-# from the Visium HD panel are dropped by present_features().
+# Mouse CAF markers
 caf_groups <- list(
   "Pan-CAF / identity"      = c("Pdgfra", "Pdgfrb", "Dcn", "Lum", "Vcan",
                                 "Sparc", "Thy1", "Fap", "Pdpn", "Col1a1",
@@ -203,9 +199,7 @@ caf_groups <- list(
 
 caf_markers <- unique(unlist(caf_groups, use.names = FALSE))
 
-# --- Lineage marker panel for subcluster phenotyping ----------------------
-# Used to read out what each reclustered subcluster is (major CNS / TME
-# lineages), grouped by lineage.
+# Lineage marker panel for subcluster phenotyping
 lineage_groups <- list(
   "Glioma / tumor"    = c("Olig1", "Olig2", "Sox2", "Egfr", "Pdgfra",
                           "Pten", "Trp53", "Mki67", "Vim"),
@@ -249,7 +243,7 @@ seurat_data$Treatment_Day <- factor(seurat_data$Treatment_Day,
 
 ```
 
-Colors for treatment and day, reused throughout.
+Colors for treatment and day
 
 ```{r, warning=F, message=F}
 
@@ -300,7 +294,7 @@ dev.off()
 
 ```
 
-Counts and features per spot.
+Counts and features per spot
 
 ```{r, warning=F, message=F, fig.width = 20, fig.height = 12}
 
@@ -328,13 +322,13 @@ FeaturePlot_scCustom(seurat_object = seurat_data,
                      features = present_features(seurat_data, c(gbm_genes, "C1qa")),
                      reduction = "sp", num_columns = 1, raster = FALSE, order = TRUE)
 
-ggsave(file.path(figdir, "VisiumHD_GBM_genes.png"), width = 12, height = 24)
+#ggsave(file.path(figdir, "VisiumHD_GBM_genes.png"), width = 12, height = 24)
 
 ```
 
 ## Tumor microenvironment marker plots
 
-Immune, SPP1 / Tweak-Fn14 axis and structural markers across the tissue.
+Immune, SPP1 axis and tissue markers
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 26}
 
@@ -350,7 +344,7 @@ ggsave(file.path(figdir, "VisiumHD_TME_genes.png"), width = 10, height = 26)
 
 ```
 
-SPP1 axis and interferon signaling.
+SPP1 axis and interferon signaling
 
 ```{r, warning=F, message=F, fig.width = 8, fig.height = 12}
 
@@ -361,7 +355,7 @@ FeaturePlot_scCustom(seurat_object = seurat_data,
   coord_fixed() & NoAxes()
 
 ifn_features <- present_features(seurat_data,
-                                 c(ifn_genes, grep("Ifn", rownames(seurat_data), value = TRUE)))
+                                 c(spp1_axis, grep("Ifn", rownames(seurat_data), value = TRUE)))
 
 FeaturePlot_scCustom(seurat_object = seurat_data,
                      features = present_features(seurat_data,
@@ -382,7 +376,7 @@ VlnPlot(seurat_data, features = present_features(seurat_data, spp1_axis),
   theme_classic()
 
 DotPlot(seurat_data,
-        features = present_features(seurat_data, c(ifn_genes, grep("Ifn", rownames(seurat_data), value = TRUE))),
+        features = present_features(seurat_data, c(spp1_axis, grep("Ifn", rownames(seurat_data), value = TRUE))),
         group.by = "Treatment_Day") &
   theme_classic() & coord_flip() & RotatedAxis() & xlab("") & ylab("")
 
@@ -424,17 +418,7 @@ VlnPlot(tams, features = present_features(tams, spp1_axis),
 
 ```
 
-## Reclustering each Seurat cluster and building the working cluster label
-
-Each Seurat cluster (`projected_snn_res.1.2`) is subset and fully re-processed
-from scratch (FindVariableFeatures → ScaleData → PCA → UMAP → neighbors →
-clustering) on the `r recluster_assay` assay, producing a fresh `umap.sketch`
-embedding and a `subcluster` label. Cluster 2 is reclustered at a higher
-resolution than the other clusters. Selected subclusters are then split out into
-their own clusters while every other spot keeps its `projected_snn_res.1.2`
-label, giving a `new_cluster` label. From this point on `new_cluster` is the
-primary Seurat cluster identity, used for annotation, marker discovery and the
-TACCO / predicted-ID comparisons below.
+## Reclustering each Seurat cluster
 
 ```{r recluster-all, warning=F, message=F, results = "hide"}
 
@@ -459,8 +443,7 @@ recluster_list <- recluster_list[!vapply(recluster_list, is.null, logical(1))]
 
 ```
 
-Build the merged `new_cluster` label: split out the requested subclusters, keep
-everything else at its `projected_snn_res.1.2` label.
+Assigning a new label
 
 ```{r build-new-cluster, warning=F, message=F}
 
@@ -512,7 +495,7 @@ names(seurat_cluster_col) <- levels(seurat_data$new_cluster)
 
 ```
 
-Subcluster UMAPs.
+Subcluster UMAPs
 
 ```{r recluster-umaps, warning=F, message=F, fig.width = 12, fig.height = max(4, 3 * ceiling(length(recluster_list) / 3))}
 
@@ -522,11 +505,12 @@ umap_plots <- lapply(names(recluster_list), function(cl) {
     theme_classic() + NoLegend() +
     ggtitle(paste0("Cluster ", cl, " subclusters"))
 })
+
 wrap_plots(umap_plots, ncol = 3)
 
 ```
 
-Lineage markers in the subclusters of each Seurat cluster.
+Lineage markers in the subclusters of each Seurat cluster
 
 ```{r recluster-lineage-dot, warning=F, message=F, fig.width = 5, fig.height = max(4, 0.25 * n_lineage_genes)}
 
@@ -538,7 +522,7 @@ for (cl in names(recluster_list)) {
 
 ```
 
-Immune, GBM and CAF markers within each cluster's subclusters.
+Immune, GBM and CAF markers within each cluster's subclusters
 
 ```{r recluster-marker-panels, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.22 * n_immune_genes)}
 
@@ -555,7 +539,7 @@ for (cl in names(recluster_list)) {
 
 ```
 
-New cluster label on the tissue.
+New cluster label on the tissue
 
 ```{r new-cluster-sp, warning=F, message=F, fig.width = 10, fig.height = 8}
 
@@ -586,7 +570,7 @@ names(predicted.id_tam_col) <- sort(unique(seurat_data$predicted.id_tam))
 
 ```
 
-TACCO myeloid label on the tissue.
+TACCO myeloid label on the tissue
 
 ```{r, warning=F, message=F, fig.width = 10, fig.height = 8}
 
@@ -595,7 +579,7 @@ DimPlot(seurat_data, group.by = "TACCO_myeloid_label", reduction = "sp") &
 
 ```
 
-Cell type composition by treatment × day.
+Cell type composition by treatment × day
 
 ```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
 
@@ -610,7 +594,7 @@ create_barplot(seurat_data,
 
 ```
 
-Per-sample proportions with treatment × day distribution.
+Per-sample proportions with treatment × day distribution
 
 ```{r, warning=F, message=F, fig.width = 13, fig.height = 8}
 
@@ -634,7 +618,7 @@ ggplot(prop_df, aes(x = Treatment_Day, y = prop, fill = Treatment_Day)) +
 
 ```
 
-Seurat cluster composition by treatment × day.
+Seurat cluster composition by treatment × day
 
 ```{r, warning=F, message=F, fig.width = 8, fig.height = 5}
 
@@ -650,10 +634,6 @@ create_barplot(seurat_data,
 ```
 
 ## Annotation concordance
-
-Cross-tabulations and paired bar plots between the new Seurat clusters
-(`new_cluster`), the TACCO myeloid labels, and the Seurat label-transfer TAM
-annotation.
 
 ```{r, warning=F, message=F}
 
@@ -701,20 +681,24 @@ p3 + p4
 
 ## Top marker expression
 
-Top positive markers for each annotation and each Seurat cluster.
+Top positive markers for each annotation and each Seurat cluster
+
+TACCO labels
 
 ```{r, warning=F, message=F, fig.width = 18, fig.height = 6}
 
 seurat_data <- JoinLayers(seurat_data)
 
 Idents(seurat_data) <- seurat_data$TACCO_myeloid_label
-tacco_markers <- FindAllMarkers(seurat_data, only.pos = TRUE,return.thresh = 0.1)
+tacco_markers <- FindAllMarkers(seurat_data, only.pos = TRUE, return.thresh = 0.1)
 tacco_markers_sig <- tacco_markers %>% group_by(cluster) %>% top_n(n = 3, wt = avg_log2FC)
 
 cluster_dotplot(seurat_data, unique(tacco_markers_sig$gene),
                 group_var = "TACCO_myeloid_label", flip = FALSE)
 
 ```
+
+Clusters
 
 ```{r, warning=F, message=F, fig.width = 20, fig.height = 6}
 
@@ -729,6 +713,19 @@ cluster_dotplot(seurat_data, unique(cluster_markers_sig$gene),
 cluster_markers_more <- cluster_markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
 
 write.table(cluster_markers_more, "/home/hnatri/VisiumHD_cluster_markers_top10.tsv",
+            quote = F, sep = "\t")
+
+cluster_markers_top <- cluster_markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_log2FC)
+
+cluster_dotplot(seurat_data, unique(cluster_markers_top$gene),
+                group_var = seurat_cluster_var, flip = FALSE)
+
+# Saving all sig markers
+cluster_markers_sig <- cluster_markers %>% filter(p_val_adj < 0.01 & abs(avg_log2FC) > 1 & pct.1 > 0.1)
+
+table(cluster_markers_sig$cluster)
+
+write.table(cluster_markers_sig, "/home/hnatri/VisiumHD_cluster_markers_sig.tsv",
             quote = F, sep = "\t")
 
 ```
@@ -813,7 +810,7 @@ and top markers per treatment group within the immune clusters.
 ```{r myeloid-cluster, warning=F, message=F, fig.width = 8, fig.height = max(4, 0.22 * n_immune_genes)}
 
 cluster_dotplot(seurat_data,
-                unique(c(lymph_markers, mouse_immune, ifn_genes,
+                unique(c(lymph_markers, mouse_immune, spp1_axis,
                          grep("Ifn", rownames(seurat_data), value = TRUE))),
                 group_var = seurat_cluster_var,
                 title = "Immune / myeloid markers by Seurat cluster")
@@ -830,7 +827,7 @@ immune_only <- subset(seurat_data,
                       cells = colnames(seurat_data)[as.character(seurat_data@meta.data[[seurat_cluster_var]]) %in% immune_clusters])
 
 DotPlot(seurat_data,
-        features = present_features(seurat_data, unique(c(lymph_markers, mouse_immune, ifn_genes))),
+        features = present_features(seurat_data, unique(c(lymph_markers, mouse_immune, spp1_axis))),
         group.by = "Treatment_Day") &
   theme_classic() & RotatedAxis() & xlab("") & ylab("")
 
@@ -873,5 +870,396 @@ VlnPlot(seurat_data, features = present_features(seurat_data, c("Tigit", "Cd8a",
         split.by = "Treatment", group.by = "Day", pt.size = 0, ncol = 1,
         cols = treatment_cols) &
   theme_classic()
+
+```
+
+## Interferon signaling in the final clusters
+
+Mouse IFN gene programs
+
+```{r ifn-genesets, warning=F, message=F}
+
+ifn_groups <- list(
+  "Ligands"              = c("Ifnb1", grep("^Ifna[0-9]+$", rownames(seurat_data), value = TRUE),
+                             "Ifng", "Ifnl2", "Ifnl3"),
+  "Receptors / JAK-STAT" = c("Ifnar1", "Ifnar2", "Ifngr1", "Ifngr2",
+                             "Jak1", "Jak2", "Tyk2", "Stat1", "Stat2", "Irf9"),
+  "Type I ISGs"          = c("Isg15", "Ifit1", "Ifit2", "Ifit3", "Ifit3b", "Rsad2",
+                             "Mx1", "Mx2", "Oas1a", "Oasl1", "Oasl2", "Irf7",
+                             "Ifi44", "Ifi27l2a", "Rtp4", "Xaf1", "Bst2", "Zbp1",
+                             "Ifih1", "Rigi", "Ddx58", "Isg20"),
+  "IFN-g response"       = c("Irf1", "Cxcl9", "Cxcl10", "Gbp2", "Gbp5", "Gbp7",
+                             "Igtp", "Iigp1", "Irgm1", "Tgtp1", "Ciita", "Cd274", "Ido1"),
+  "Antigen presentation" = c("B2m", "Tap1", "Psmb8", "Psmb9", "H2-K1", "H2-D1",
+                             "H2-Ab1", "H2-Aa", "Cd74"),
+  "Negative regulators"  = c("Socs1", "Socs3", "Usp18"))
+
+ifn_groups_present <- lapply(ifn_groups, function(g) present_features(seurat_data, g))
+ifn_groups_present <- ifn_groups_present[lengths(ifn_groups_present) > 0]
+n_spp1_axis <- length(unlist(ifn_groups_present))
+n_final_clusters <- length(levels(seurat_data@meta.data[[seurat_cluster_var]]))
+
+# Module scores (require >= 3 panel genes per program)
+# Score on the full-resolution assay (all spots), not the sketch assay
+score_assay <- "Spatial"   # change if your full assay has another name, e.g. "Spatial.008um"
+Assays(seurat_data)
+Layers(seurat_data[[score_assay]])
+
+# AddModuleScore needs a single, normalized "data" layer
+if (length(Layers(seurat_data[[score_assay]], search = "data")) > 1 ||
+    length(Layers(seurat_data[[score_assay]], search = "counts")) > 1) {
+  seurat_data[[score_assay]] <- JoinLayers(seurat_data[[score_assay]])
+}
+if (!"data" %in% Layers(seurat_data[[score_assay]])) {
+  seurat_data <- NormalizeData(seurat_data, assay = score_assay, verbose = FALSE)
+}
+
+# Keep only program genes that are in this assay and detected in at least one spot
+expr_mat <- LayerData(seurat_data, assay = score_assay, layer = "data")
+detected <- rownames(expr_mat)[Matrix::rowSums(expr_mat > 0) > 0]
+
+score_sets <- list(IFN_typeI = ifn_groups_present[["Type I ISGs"]],
+                   IFN_gamma = ifn_groups_present[["IFN-g response"]],
+                   IFN_MHC   = ifn_groups_present[["Antigen presentation"]])
+score_sets <- lapply(score_sets, function(g) intersect(g, detected))
+score_sets <- score_sets[lengths(score_sets) >= 3]
+lengths(score_sets)
+
+for (nm in names(score_sets)) {
+  seurat_data <- AddModuleScore(seurat_data, features = list(score_sets[[nm]]),
+                                name = nm, assay = score_assay,
+                                nbin = 24, ctrl = 100, seed = 1234)
+  seurat_data@meta.data[[nm]] <- seurat_data@meta.data[[paste0(nm, "1")]]
+  seurat_data@meta.data[[paste0(nm, "1")]] <- NULL
+}
+ifn_score_cols <- names(score_sets)
+rm(expr_mat)
+
+lengths(score_sets)
+
+```
+
+IFN program genes by cluster
+
+```{r ifn-dot-cluster, warning=F, message=F, fig.width = max(8, 0.25 * n_spp1_axis + 3), fig.height = max(4, 0.25 * n_final_clusters + 2)}
+
+ifn_dot <- DotPlot(seurat_data, features = ifn_groups_present,
+                   group.by = seurat_cluster_var, cols = c("gray89", "tomato3")) +
+  theme_classic() + RotatedAxis() + xlab("") + ylab("") +
+  theme(strip.text.x = element_text(angle = 90, hjust = 0, size = 8),
+        strip.background = element_blank())
+ifn_dot
+
+pdf(file.path(figdir, "VisiumHD_spp1_axis_by_cluster.pdf"),
+    width = max(8, 0.25 * n_spp1_axis + 3), height = max(4, 0.25 * n_final_clusters + 2))
+ifn_dot
+dev.off()
+
+```
+
+IFN module scores by cluster
+
+```{r ifn-score-cluster, warning=F, message=F, fig.width = max(8, 0.35 * n_final_clusters), fig.height = 3 * length(ifn_score_cols)}
+
+VlnPlot(seurat_data, features = ifn_score_cols, group.by = seurat_cluster_var,
+        cols = seurat_cluster_col, pt.size = 0, ncol = 1) &
+  theme_classic() & RotatedAxis() & NoLegend() & xlab("")
+
+q95 <- sapply(ifn_score_cols, function(s) quantile(seurat_data@meta.data[[s]], 0.95, na.rm = TRUE))
+
+ifn_cluster_summary <- seurat_data@meta.data %>%
+  group_by(cluster = .data[[seurat_cluster_var]]) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   across(all_of(ifn_score_cols), ~ mean(.x, na.rm = TRUE), .names = "{.col}_mean"),
+                   across(all_of(ifn_score_cols), ~ mean(.x > q95[cur_column()], na.rm = TRUE),
+                          .names = "{.col}_pct_high"),
+                   .groups = "drop")
+
+ifn_cluster_summary
+
+```
+
+```{r ifn-score-heatmap, warning=F, message=F, fig.width = max(8, 0.35 * n_final_clusters), fig.height = 3}
+
+ifn_heat_df <- ifn_cluster_summary %>%
+  dplyr::select(cluster, ends_with("_mean")) %>%
+  pivot_longer(-cluster, names_to = "program", values_to = "score") %>%
+  mutate(program = sub("_mean$", "", program)) %>%
+  group_by(program) %>%
+  mutate(z = as.numeric(scale(score))) %>%
+  ungroup()
+
+ifn_heat <- ggplot(ifn_heat_df, aes(x = cluster, y = program, fill = z)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "steelblue", mid = "white", high = "tomato3",
+                       name = "Mean score\n(z across clusters)") +
+  theme_classic() + RotatedAxis() + xlab("") + ylab("")
+
+ifn_heat
+
+
+```
+
+IFN module scores on the tissue
+
+```{r ifn-score-sp, warning=F, message=F, fig.width = 20, fig.height = 8 * length(ifn_score_cols)}
+
+FeaturePlot_scCustom(seurat_object = seurat_data, features = ifn_score_cols,
+                     reduction = "sp", num_columns = 1, na_cutoff = NA,
+                     raster = TRUE, order = TRUE) &
+  coord_fixed() & NoAxes()
+
+```
+
+```{r ifn-score-treatment, warning=F, message=F, fig.width = 16, fig.height = max(6, 2.2 * ceiling(n_final_clusters / 6))}
+
+ifn_sample_df <- seurat_data@meta.data %>%
+  filter(as.character(.data[[seurat_cluster_var]]) != "NA") %>%
+  group_by(cluster = .data[[seurat_cluster_var]], Sample, Treatment, Day, Treatment_Day) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   across(all_of(ifn_score_cols), ~ mean(.x, na.rm = TRUE)),
+                   .groups = "drop") %>%
+  filter(n >= 20)
+
+for (s in ifn_score_cols) {
+  p <- ggplot(ifn_sample_df, aes(x = Treatment_Day, y = .data[[s]], fill = Treatment)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+    geom_jitter(width = 0.15, size = 0.9) +
+    scale_fill_manual(values = treatment_cols) +
+    facet_wrap(~ cluster, scales = "free_y", ncol = 6) +
+    labs(x = NULL, y = paste0(s, " (per-sample mean)"), title = s) +
+    theme_bw(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  print(p)
+  ggsave(file.path(figdir, paste0("VisiumHD_", s, "_by_cluster_treatment.pdf")), p,
+         width = 16, height = max(6, 2.2 * ceiling(n_final_clusters / 6)))
+}
+
+```
+
+Treatment effect on the IFN scores
+
+```{r ifn-score-stats, warning=F, message=F}
+
+ifn_kw <- ifn_sample_df %>%
+  pivot_longer(all_of(ifn_score_cols), names_to = "program", values_to = "score") %>%
+  group_by(cluster, program) %>%
+  filter(dplyr::n_distinct(Treatment) > 1) %>%
+  dplyr::summarise(n_samples = dplyr::n(),
+                   p = kruskal.test(score ~ factor(Treatment))$p.value,
+                   .groups = "drop") %>%
+  group_by(program) %>%
+  mutate(p_adj = p.adjust(p, method = "BH")) %>%
+  ungroup() %>%
+  arrange(p_adj)
+
+ifn_kw
+
+#saveRDS(seurat_data, "/scratch/hnatri/VisiumHD_clusters.rds")
+
+```
+
+## Custom annotations
+
+Cluster → cell type labels from the "Visium HD annotations" tab
+
+```{r custom-annot-import, warning=F, message=F}
+
+seurat_data <- readRDS("/scratch/hnatri/VisiumHD_clusters.rds")
+
+gs4_deauth()  # sheet is shared by link; use gs4_auth() instead if it becomes restricted
+annot_url <- "https://docs.google.com/spreadsheets/d/1ApwXjEVtpPB87al6q3ab8TKvZYJTh3iNH1cuO-A_OoU/edit?usp=sharing"
+
+custom_annot <- read_sheet(annot_url, sheet = "Visium HD annotations")
+
+seurat_data$celltype <- plyr::mapvalues(seurat_data$new_cluster,
+                                  from = custom_annot$cluster,
+                                  to = custom_annot$celltype)
+
+celltype_levels <- sort(unique(seurat_data$celltype))
+seurat_data$celltype <- factor(seurat_data$celltype, levels = celltype_levels)
+
+celltype_col <- colorRampPalette(brewer.pal(12, "Paired"))(length(celltype_levels))
+names(celltype_col) <- celltype_levels
+
+```
+
+Cell types on the tissue
+
+```{r custom-annot-sp, warning=F, message=F, fig.width = 20, fig.height = 8}
+
+p_ct_sp <- DimPlot(seurat_data, reduction = "sp", group.by = "celltype",
+                   cols = celltype_col, raster = TRUE) +
+  theme_classic() + coord_fixed() + NoAxes()
+
+p_ct_sp
+
+#pdf(file.path(figdir, "VisiumHD_dimplot_celltype.pdf"), width = 20, height = 8)
+#p_ct_sp
+#dev.off()
+
+```
+
+Cell type composition by treatment × day (pooled spots)
+
+```{r custom-annot-bar, warning=F, message=F, fig.width = 8, fig.height = 5}
+
+create_barplot(seurat_data,
+               group_var = "Treatment_Day",
+               plot_var = "celltype",
+               plot_levels = celltype_levels,
+               group_levels = levels(seurat_data$Treatment_Day),
+               plot_colors = celltype_col,
+               var_names = c("Frequency (%)", ""),
+               legend_title = "Cell type")
+
+```
+
+Per-sample proportions. The sample (not the spot) is the unit of replication.
+Unannotated spots are excluded from the denominator.
+
+```{r custom-annot-props, warning=F, message=F, fig.width = 14, fig.height = 9}
+
+# Per-sample cell type counts and proportions. Unannotated spots are left out
+# of the denominator. Cell types a sample doesn't have are filled in as 0, so
+# the GLM and plots include zero counts.
+ct_counts <- seurat_data@meta.data %>%
+  dplyr::filter(!is.na(celltype), as.character(celltype) != "Unannotated") %>%
+  dplyr::mutate(celltype = droplevels(celltype)) %>%
+  dplyr::count(Sample, Treatment, Day, Treatment_Day, celltype, name = "n") %>%
+  tidyr::complete(tidyr::nesting(Sample, Treatment, Day, Treatment_Day), celltype,
+                  fill = list(n = 0)) %>%
+  dplyr::group_by(Sample) %>%
+  dplyr::mutate(total = sum(n),
+                prop  = n / total) %>%
+  dplyr::ungroup()
+
+p_ct_prop <- ggplot(ct_counts, aes(x = Treatment_Day, y = prop, color = Treatment)) +
+  stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "gray30", linewidth = 0.3) +
+  geom_point(size = 1.8, position = position_jitter(width = 0.1, height = 0, seed = 1)) +
+  scale_color_manual(values = treatment_cols) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~ celltype, scales = "free_y") +
+  labs(x = NULL, y = "Proportion of spots (per sample)") +
+  theme_bw(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p_ct_prop
+
+#ggsave(file.path(figdir, "VisiumHD_celltype_props_by_group.pdf"), p_ct_prop, width = 14, height = 9)
+
+```
+
+### Day 16: cell type proportion differences between treatments
+
+Per cell type, a quasibinomial GLM on per-sample counts
+(cbind(n, total - n) ~ Treatment, Tumor as reference). Models overdispersion
+across samples to avoid treating spots as replicates. Omnibus p-values (any treatment
+difference) are BH-adjusted across cell types, and per-contrast p-values across all
+contrasts.
+
+```{r custom-annot-d16-stats, warning=F, message=F}
+
+d16 <- ct_counts %>%
+  dplyr::filter(Day == "16") %>%
+  dplyr::mutate(Treatment = factor(Treatment,
+                                   levels = intersect(c("Tumor", "Anti-Spp1", "CAR", "Anti-Spp1+CAR"),
+                                                      unique(Treatment))))
+
+d16_n <- d16 %>% dplyr::distinct(Sample, Treatment) %>% dplyr::count(Treatment, name = "n_samples")
+d16_n
+
+single_groups <- as.character(d16_n$Treatment[d16_n$n_samples < 2])
+ref_group <- levels(d16$Treatment)[1]
+
+fit_celltype <- function(df) {
+  if (sum(df$n) == 0 || dplyr::n_distinct(df$Treatment) < 2) return(tibble())
+  fit  <- glm(cbind(n, total - n) ~ Treatment, family = quasibinomial, data = df)
+  if (fit$df.residual < 1) return(tibble())   # no replicated group -> no inference
+  null <- glm(cbind(n, total - n) ~ 1, family = quasibinomial, data = df)
+  omnibus_p <- anova(null, fit, test = "F")$`Pr(>F)`[2]
+
+  co <- summary(fit)$coefficients
+  co <- co[grepl("^Treatment", rownames(co)), , drop = FALSE]
+  grp <- sub("^Treatment", "", rownames(co))
+
+  # Groups with zero counts of this cell type give unstable (separated) estimates
+  zero_groups <- df %>% dplyr::group_by(Treatment) %>%
+    dplyr::summarise(z = sum(n) == 0, .groups = "drop") %>%
+    dplyr::filter(z) %>% dplyr::pull(Treatment) %>% as.character()
+
+  tibble(contrast  = paste0(grp, " vs ", ref_group),
+         group     = grp,
+         log_OR    = co[, "Estimate"],
+         OR        = exp(co[, "Estimate"]),
+         se        = co[, "Std. Error"],
+         p         = co[, "Pr(>|t|)"],
+         omnibus_p = omnibus_p,
+         resid_df  = fit$df.residual,
+         dispersion = summary(fit)$dispersion,
+         single_sample_group = grp %in% single_groups | ref_group %in% single_groups,
+         zero_count_group    = grp %in% zero_groups | ref_group %in% zero_groups)
+}
+
+d16_stats <- d16 %>%
+  dplyr::group_by(celltype) %>%
+  dplyr::group_modify(~ fit_celltype(.x)) %>%
+  dplyr::ungroup()
+
+d16_omnibus <- d16_stats %>%
+  dplyr::distinct(celltype, omnibus_p, resid_df, dispersion) %>%
+  dplyr::mutate(omnibus_p_adj = p.adjust(omnibus_p, method = "BH")) %>%
+  dplyr::arrange(omnibus_p_adj)
+
+d16_stats <- d16_stats %>%
+  dplyr::mutate(p_adj = p.adjust(p, method = "BH")) %>%
+  dplyr::left_join(d16_omnibus %>% dplyr::select(celltype, omnibus_p_adj), by = "celltype") %>%
+  dplyr::arrange(omnibus_p_adj, p_adj)
+
+d16_omnibus
+
+d16_stats
+
+```
+
+Speckle/propeller
+
+```{r custom-annot-d16-propeller, warning=F, message=F}
+
+md16 <- seurat_data@meta.data %>%
+  dplyr::filter(as.character(Day) == "16", celltype != "Unannotated")
+d16_propeller <- speckle::propeller(clusters = droplevels(md16$celltype),
+                                    sample   = as.character(md16$Sample),
+                                    group    = as.character(md16$Treatment),
+                                    transform = "logit")
+d16_propeller
+
+```
+
+Day 16 per-sample proportions with omnibus FDR
+
+```{r custom-annot-d16-plot, warning=F, message=F, fig.width = 12, fig.height = 9}
+
+facet_labs <- d16_omnibus %>%
+  dplyr::mutate(lab = paste0(celltype, "\nFDR = ", signif(omnibus_p_adj, 2))) %>%
+  { setNames(.$lab, as.character(.$celltype)) }
+
+p_d16 <- ggplot(d16, aes(x = Treatment, y = prop, color = Treatment)) +
+  stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "gray30", linewidth = 0.3) +
+  geom_point(size = 2, position = position_jitter(width = 0.1, height = 0, seed = 1)) +
+  scale_color_manual(values = treatment_cols) +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~ celltype, scales = "free_y",
+             labeller = labeller(celltype = function(x) ifelse(x %in% names(facet_labs),
+                                                               facet_labs[x], x))) +
+  labs(x = NULL, y = "Proportion of spots (per sample)",
+       title = "Day 16 cell type proportions",
+       subtitle = if (length(single_groups))
+         paste0("Single-sample group(s): ", paste(single_groups, collapse = ", ")) else NULL) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1))
+p_d16
+
+#ggsave(file.path(figdir, "VisiumHD_celltype_props_D16.pdf"), p_d16, width = 12, height = 9)
 
 ```
